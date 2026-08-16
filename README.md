@@ -68,15 +68,22 @@ Open <http://localhost:3000>.
 The seed creates three accounts, one per role, so each role's view can be
 inspected. They are listed on the sign-in screen as well.
 
-| Role | Email | Password |
+| Role | Sign in with | Password |
 |---|---|---|
+| **Admin** | **`admin`** | **`admin`** |
 | Admin | `admin@viemostudio.example` | `viemo-admin-2026` |
 | Member | `member@viemostudio.example` | `viemo-member-2026` |
 | Viewer | `viewer@viemostudio.example` | `viemo-viewer-2026` |
 
-> These are demonstration credentials for synthetic data. **Removing the account
-> list from the sign-in screen (`app/(auth)/login/page.tsx`) and reseeding with
-> new passwords is the first thing to do if this is ever pointed at real data.**
+Use **`admin` / `admin`** to look around. It exists so a reviewer does not have
+to copy a long string off a screen; it bypasses the normal password rules
+because the seed hashes directly rather than going through validation.
+
+> **Before this ever touches real data**, in this order: delete the `admin` /
+> `admin` account from `prisma/seed.ts`, remove the account list from the
+> sign-in screen (`app/(auth)/login/page.tsx`), and reseed with real passwords.
+> These are demonstration credentials for a system that holds nothing but
+> invented records and connects to nothing.
 
 ---
 
@@ -153,6 +160,8 @@ tests/integration/       Tests that need a real database
 | Document | Contents |
 |---|---|
 | [Team handbook](CONTRIBUTING.md) | **Start here if you are working on this.** Setup, the three architectural rules, where things go, definition of done |
+| [MVP scope and planning](docs/mvp-scope.md) | What is in, what is out, why — with every brief deliverable traced to where it lives |
+| [Design system](docs/design-system.md) | The design layer (rebuildable in Figma) and the framework layer (how it exists in code) |
 | [Design and architecture](docs/design-and-architecture.md) | The data model, module boundaries, key decisions and the reasoning behind them |
 | [Architecture decisions](docs/adr/README.md) | Eight ADRs — why each choice was made, what was rejected, and what it cost |
 | [BRM taxonomy](docs/brm-taxonomy.md) | Every relationship type and status defined, and how the model differs from a CRM |
