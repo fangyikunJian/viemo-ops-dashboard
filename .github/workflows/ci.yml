@@ -41,6 +41,11 @@ jobs:
       - name: Apply migrations
         run: npx prisma migrate deploy
 
+      # `npm run typecheck` generates route types first. PageProps and
+      # LayoutProps are written by Next.js at build time, so on a clean
+      # checkout tsc cannot see them until typegen has run — which is exactly
+      # the failure a developer never hits locally, because their .next
+      # directory already has them.
       - name: Typecheck
         run: npm run typecheck
 
