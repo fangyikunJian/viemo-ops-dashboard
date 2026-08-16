@@ -15,6 +15,7 @@ import { addDays } from "date-fns";
 
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "./password";
+import { checkRateLimit, clearRateLimit, recordFailure } from "./rate-limit";
 import {
   can,
   type PermissionAction,
@@ -60,14 +61,32 @@ export async function signIn(
   password: string,
 ): Promise<SignInResult> {
   const generalFailure = { ok: false, error: "Email or password is incorrect." } as const;
+  const address = email.trim().toLowerCase();
+
+  // Bound the number of guesses before anything expensive happens.
+  const limit = checkRateLimit(address);
+  if (!limit.allowed) {
+    return {
+      ok: false,
+      error: `Too many sign-in attempts. Try again in ${limit.retryAfterMinutes} minutes.`,
+    };
+  }
 
   const user = await prisma.user.findUnique({
-    where: { email: email.trim().toLowerCase() },
+    where: { email: address },
     include: { teamMember: true },
   });
 
-  if (!user || !user.isActive) return generalFailure;
-  if (!(await verifyPassword(password, user.passwordHash))) return generalFailure;
+  if (!user || !user.isActive) {
+    recordFailure(address);
+    return generalFailure;
+  }
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    recordFailure(address);
+    return generalFailure;
+  }
+
+  clearRateLimit(address);
 
   const sessionId = newSessionId();
   const expiresAt = addDays(new Date(), SESSION_TTL_DAYS);
