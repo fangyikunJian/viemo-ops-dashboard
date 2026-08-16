@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated output, not source: the Prisma client and the coverage report
+    // are both written by tooling and both carry their own lint directives.
+    "generated/**",
+    "coverage/**",
   ]),
 ]);
 
