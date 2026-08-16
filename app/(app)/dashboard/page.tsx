@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  CalendarClock,
-  CheckCircle2,
-  Handshake,
-  History,
-  ListTodo,
-} from "lucide-react";
+import { CheckCircle2, History, ListTodo } from "lucide-react";
 
 import { requireUser } from "@/lib/auth/session";
 import { getDashboardData } from "@/lib/dashboard/queries";
@@ -14,20 +8,23 @@ import { describeLastContact } from "@/lib/brm/cadence";
 import { progressPercent } from "@/lib/pm/project-health";
 import { formatDateCompact, formatDays, formatRelativeDate } from "@/lib/format";
 
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { StatTile } from "@/components/ui/stat-tile";
+import { Metric, MetricStrip } from "@/components/ui/metric";
+import { Row, Rows, Section } from "@/components/ui/section";
 import { BarList, ProgressBar } from "@/components/ui/bar-list";
-import { EmptyState, PageHeader } from "@/components/ui/empty-state";
-import { ButtonLink } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
-  CadenceBadge,
   InteractionChannelBadge,
   RelationshipTypeBadge,
-  RiskBadge,
   TaskPriorityBadge,
 } from "@/components/domain/badges";
 
 export const metadata: Metadata = { title: "Dashboard" };
+
+/** Rail colour by urgency — the reserved status tokens, nothing invented. */
+const RAIL = {
+  overdue: "var(--status-critical)",
+  dueSoon: "var(--status-warning)",
+} as const;
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -35,292 +32,312 @@ export default async function DashboardPage() {
   const data = await getDashboardData(now);
 
   const firstName = user.name.split(" ")[0];
+  const { OVERDUE, DUE_SOON } = data.cadenceSummary;
+  const atRisk = data.projectSummary.atRisk;
+  const needsNothing = OVERDUE === 0 && DUE_SOON === 0 && atRisk === 0;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={`Good day, ${firstName}`}
-        description="Relationship health beside project status — the single operational picture."
-      />
+    <div className="space-y-9">
+      {/* ══ The answer ═══════════════════════════════════════════
+          One statement, at the top, at a size nothing else on the page
+          competes with. A reader should be able to stand two metres from
+          the screen and know whether today needs them. */}
+      <header>
+        <p className="eyebrow">
+          {new Intl.DateTimeFormat("en-AU", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          }).format(now)}
+          {" · "}
+          {firstName}
+        </p>
 
-      {/* ── The four headline numbers ──────────────────────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile
-          label="Relationships overdue"
-          value={data.cadenceSummary.OVERDUE}
-          status={data.cadenceSummary.OVERDUE > 0 ? "critical" : "good"}
-          hint="Past the contact rhythm the team agreed"
+        {needsNothing ? (
+          <>
+            <h1 className="mt-2 max-w-2xl text-display text-ink">
+              Everything is on track.
+            </h1>
+            <p className="mt-2 max-w-xl text-sm text-ink-secondary">
+              No relationship has lapsed past its cadence and no project is
+              overdue or blocked.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-2 max-w-3xl text-display text-ink">
+              {OVERDUE > 0 ? (
+                <>
+                  <span className="text-critical">
+                    {OVERDUE} relationship{OVERDUE === 1 ? "" : "s"}
+                  </span>{" "}
+                  need{OVERDUE === 1 ? "s" : ""} contact
+                </>
+              ) : (
+                <>
+                  <span className="text-ink">
+                    {DUE_SOON} relationship{DUE_SOON === 1 ? "" : "s"}
+                  </span>{" "}
+                  fall{DUE_SOON === 1 ? "s" : ""} due shortly
+                </>
+              )}
+              <span className="text-ink-muted">.</span>
+            </h1>
+            <p className="mt-2.5 max-w-2xl text-sm text-ink-secondary">
+              {DUE_SOON > 0 && OVERDUE > 0 ? (
+                <>
+                  Another {DUE_SOON}{" "}
+                  {DUE_SOON === 1
+                    ? "is inside the final fifth of its window"
+                    : "are inside the final fifth of their windows"}
+                  {atRisk > 0 ? ", and " : ". "}
+                </>
+              ) : null}
+              {atRisk > 0 ? (
+                <>
+                  {DUE_SOON > 0 && OVERDUE > 0 ? "" : "Meanwhile, "}
+                  {atRisk} project{atRisk === 1 ? " is" : "s are"} at risk —
+                  overdue, or held up by a blocked task.
+                </>
+              ) : (
+                "No project is at risk."
+              )}
+            </p>
+          </>
+        )}
+      </header>
+
+      {/* ══ Supporting figures ══════════════════════════════════ */}
+      <MetricStrip>
+        <Metric
+          label="Overdue"
+          value={OVERDUE}
+          tone={OVERDUE > 0 ? "critical" : "good"}
+          note="Past agreed cadence"
           href="/relationships?cadence=OVERDUE"
         />
-        <StatTile
+        <Metric
           label="Due soon"
-          value={data.cadenceSummary.DUE_SOON}
-          status={data.cadenceSummary.DUE_SOON > 0 ? "warning" : "good"}
-          hint="Inside the final fifth of the cadence window"
+          value={DUE_SOON}
+          tone={DUE_SOON > 0 ? "warning" : "good"}
+          note="Within the warning window"
           href="/relationships?cadence=DUE_SOON"
         />
-        <StatTile
-          label="Projects at risk"
-          value={data.projectSummary.atRisk}
-          status={data.projectSummary.atRisk > 0 ? "critical" : "good"}
-          hint="Overdue, or held up by a blocked task"
+        <Metric
+          label="At risk"
+          value={atRisk}
+          tone={atRisk > 0 ? "critical" : "good"}
+          note="Overdue or blocked"
           href="/projects?risk=at-risk"
         />
-        <StatTile
-          label="Projects in flight"
+        <Metric
+          label="In flight"
           value={data.projectSummary.live}
-          hint={`${data.totals.relationships} active relationships tracked`}
+          note={`${data.totals.relationships} relationships tracked`}
           href="/projects"
         />
-      </div>
+      </MetricStrip>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* ── Relationships needing attention ──────────────────── */}
-        <Card className="lg:col-span-2">
-          <CardHeader
-            title="Relationships needing attention"
-            description="Overdue first, then those about to lapse."
-            action={
-              <ButtonLink href="/relationships" size="sm">
-                All relationships
-              </ButtonLink>
-            }
-          />
-          <CardBody className="p-0">
-            {data.needsAttention.length === 0 ? (
-              <div className="px-5 py-4">
-                <EmptyState
-                  icon={CheckCircle2}
-                  title="Every relationship is on track"
-                  description="Nothing has lapsed past its agreed cadence."
-                />
-              </div>
-            ) : (
-              <ul className="divide-y divide-line">
-                {data.needsAttention.slice(0, 7).map((row) => (
-                  <li key={row.id}>
-                    <Link
-                      href={`/relationships/${row.id}`}
-                      className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 hover:bg-sunken"
+      {/* ══ What to do about it ═════════════════════════════════ */}
+      <div className="grid gap-7 lg:grid-cols-[1.65fr_1fr]">
+        <Section
+          title="Needs contact"
+          description="Overdue first, then those about to lapse."
+          action={{ href: "/relationships", label: "All relationships" }}
+        >
+          {data.needsAttention.length === 0 ? (
+            <div className="p-4">
+              <EmptyState
+                icon={CheckCircle2}
+                title="Every relationship is on track"
+                description="Nothing has lapsed past its agreed cadence."
+              />
+            </div>
+          ) : (
+            <Rows>
+              {data.needsAttention.slice(0, 7).map((row) => (
+                <Row
+                  key={row.id}
+                  href={`/relationships/${row.id}`}
+                  rail={
+                    row.cadence.status === "OVERDUE" ? RAIL.overdue : RAIL.dueSoon
+                  }
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="truncate text-sm font-medium text-ink">
+                      {row.name}
+                    </p>
+                    <span
+                      className={
+                        row.cadence.status === "OVERDUE"
+                          ? "tabular shrink-0 text-xs font-semibold text-critical"
+                          : "tabular shrink-0 text-xs font-medium text-ink-secondary"
+                      }
                     >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-ink">
-                          {row.name}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-ink-muted">
-                          {describeLastContact(row.cadence)} · owned by{" "}
-                          {row.ownerName}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <RelationshipTypeBadge type={row.type} />
-                        <CadenceBadge
-                          status={row.cadence.status}
-                          detail={
-                            row.cadence.status === "OVERDUE"
-                              ? `${formatDays(row.cadence.daysOverdue ?? 0)} over`
-                              : `${formatDays(row.cadence.daysUntilDue ?? 0)} left`
-                          }
-                        />
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
+                      {row.cadence.status === "OVERDUE"
+                        ? `${formatDays(row.cadence.daysOverdue ?? 0)} over`
+                        : `${formatDays(row.cadence.daysUntilDue ?? 0)} left`}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <RelationshipTypeBadge type={row.type} />
+                    <span className="truncate text-xs text-ink-muted">
+                      {describeLastContact(row.cadence)} · {row.ownerName}
+                    </span>
+                  </div>
+                </Row>
+              ))}
+            </Rows>
+          )}
+        </Section>
 
-        {/* ── Relationship mix ─────────────────────────────────── */}
-        <Card>
-          <CardHeader
-            title="Relationships by type"
-            description="Archived relationships excluded."
-          />
-          <CardBody>
+        <Section title="By type" description="Archived excluded." bordered={false}>
+          <div className="rounded-xl border border-hairline bg-surface px-4 py-4">
             <BarList items={data.relationshipsByType} />
-          </CardBody>
-        </Card>
+          </div>
+        </Section>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* ── Projects at risk ─────────────────────────────────── */}
-        <Card className="lg:col-span-2">
-          <CardHeader
-            title="Projects at risk"
-            description="Overdue or blocked, soonest due first."
-            action={
-              <ButtonLink href="/projects" size="sm">
-                All projects
-              </ButtonLink>
-            }
-          />
-          <CardBody className="p-0">
-            {data.atRiskProjects.length === 0 ? (
-              <div className="px-5 py-4">
-                <EmptyState
-                  icon={CheckCircle2}
-                  title="No project is at risk"
-                  description="Nothing is overdue and nothing is blocked."
-                />
-              </div>
-            ) : (
-              <ul className="divide-y divide-line">
-                {data.atRiskProjects.map((row) => (
-                  <li key={row.id}>
-                    <Link
-                      href={`/projects/${row.id}`}
-                      className="block px-5 py-3 hover:bg-sunken"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-ink">
-                            {row.name}
-                          </p>
-                          <p className="mt-0.5 truncate text-xs text-ink-muted">
-                            Led by {row.leadName}
-                            {row.relationshipName
-                              ? ` · for ${row.relationshipName}`
-                              : ""}
-                          </p>
-                        </div>
-                        <RiskBadge reasons={row.health.riskReasons} />
-                      </div>
-                      <div className="mt-2.5 flex items-center gap-3">
-                        <ProgressBar
-                          percent={progressPercent(row.health)}
-                          className="max-w-48"
-                        />
-                        <span className="tabular text-xs text-ink-muted">
-                          {row.health.taskCounts.DONE} of{" "}
-                          {row.health.taskCounts.total} tasks
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
+      <div className="grid gap-7 lg:grid-cols-[1.65fr_1fr]">
+        <Section
+          title="Projects at risk"
+          description="Soonest due first."
+          action={{ href: "/projects", label: "All projects" }}
+        >
+          {data.atRiskProjects.length === 0 ? (
+            <div className="p-4">
+              <EmptyState
+                icon={CheckCircle2}
+                title="No project is at risk"
+                description="Nothing is overdue and nothing is blocked."
+              />
+            </div>
+          ) : (
+            <Rows>
+              {data.atRiskProjects.map((row) => (
+                <Row key={row.id} href={`/projects/${row.id}`} rail={RAIL.overdue}>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="truncate text-sm font-medium text-ink">
+                      {row.name}
+                    </p>
+                    <span className="shrink-0 text-xs font-medium text-critical">
+                      {row.health.riskReasons[0]}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-xs text-ink-muted">
+                    {row.leadName}
+                    {row.relationshipName ? ` · for ${row.relationshipName}` : ""}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2.5">
+                    <ProgressBar
+                      percent={progressPercent(row.health)}
+                      className="max-w-44"
+                    />
+                    <span className="tabular text-xs text-ink-muted">
+                      {row.health.taskCounts.DONE}/{row.health.taskCounts.total}
+                    </span>
+                  </div>
+                </Row>
+              ))}
+            </Rows>
+          )}
+        </Section>
 
-        {/* ── Project mix ──────────────────────────────────────── */}
-        <Card>
-          <CardHeader title="Projects by status" />
-          <CardBody>
+        <Section title="By status" bordered={false}>
+          <div className="rounded-xl border border-hairline bg-surface px-4 py-4">
             <BarList items={data.projectsByStatus} />
-          </CardBody>
-        </Card>
+          </div>
+        </Section>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* ── Upcoming tasks ───────────────────────────────────── */}
-        <Card>
-          <CardHeader
-            title="Next due"
-            description="Open tasks on live projects."
-          />
-          <CardBody className="p-0">
-            {data.upcomingTasks.length === 0 ? (
-              <div className="px-5 py-4">
-                <EmptyState icon={ListTodo} title="Nothing scheduled" />
-              </div>
-            ) : (
-              <ul className="divide-y divide-line">
-                {data.upcomingTasks.map((task) => {
-                  const overdue = task.dueDate < now;
-                  return (
-                    <li key={task.id}>
-                      <Link
-                        href={`/projects/${task.projectId}`}
-                        className="flex items-center justify-between gap-3 px-5 py-2.5 hover:bg-sunken"
+      <div className="grid gap-7 lg:grid-cols-2">
+        <Section title="Next due" description="Open tasks on live projects.">
+          {data.upcomingTasks.length === 0 ? (
+            <div className="p-4">
+              <EmptyState icon={ListTodo} title="Nothing scheduled" />
+            </div>
+          ) : (
+            <Rows>
+              {data.upcomingTasks.map((task) => {
+                const overdue = task.dueDate < now;
+                return (
+                  <Row
+                    key={task.id}
+                    href={`/projects/${task.projectId}`}
+                    rail={overdue ? RAIL.overdue : undefined}
+                    className="py-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm text-ink">{task.title}</p>
+                      <span
+                        className={
+                          overdue
+                            ? "tabular shrink-0 text-xs font-semibold text-critical"
+                            : "tabular shrink-0 text-xs text-ink-muted"
+                        }
                       >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm text-ink">
-                            {task.title}
-                          </p>
-                          <p className="mt-0.5 truncate text-xs text-ink-muted">
-                            {task.projectName}
-                            {task.assigneeName ? ` · ${task.assigneeName}` : ""}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <TaskPriorityBadge priority={task.priority} />
-                          <span
-                            className={
-                              overdue
-                                ? "tabular text-xs font-medium text-critical"
-                                : "tabular text-xs text-ink-muted"
-                            }
-                          >
-                            {formatRelativeDate(task.dueDate, now)}
-                          </span>
-                        </div>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
+                        {formatRelativeDate(task.dueDate, now)}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <TaskPriorityBadge priority={task.priority} />
+                      <span className="truncate text-xs text-ink-muted">
+                        {task.projectName}
+                        {task.assigneeName ? ` · ${task.assigneeName}` : ""}
+                      </span>
+                    </div>
+                  </Row>
+                );
+              })}
+            </Rows>
+          )}
+        </Section>
 
-        {/* ── Recent interactions ──────────────────────────────── */}
-        <Card>
-          <CardHeader
-            title="Recent contact"
-            description="The latest touchpoints logged against relationships."
-          />
-          <CardBody className="p-0">
-            {data.recentInteractions.length === 0 ? (
-              <div className="px-5 py-4">
-                <EmptyState icon={History} title="No interactions logged yet" />
-              </div>
-            ) : (
-              <ul className="divide-y divide-line">
-                {data.recentInteractions.map((interaction) => (
-                  <li key={interaction.id}>
-                    <Link
-                      href={`/relationships/${interaction.relationshipId}`}
-                      className="block px-5 py-2.5 hover:bg-sunken"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="truncate text-sm font-medium text-ink">
-                          {interaction.relationshipName}
-                        </p>
-                        <span className="tabular shrink-0 text-xs text-ink-muted">
-                          {formatDateCompact(interaction.occurredAt, now)}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-ink-secondary">
-                        {interaction.summary}
-                      </p>
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <InteractionChannelBadge
-                          channel={interaction.channel}
-                        />
-                        {interaction.projectName ? (
-                          <span className="truncate text-xs text-ink-muted">
-                            <CalendarClock
-                              className="mr-1 inline size-3"
-                              aria-hidden="true"
-                            />
-                            {interaction.projectName}
-                          </span>
-                        ) : null}
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
+        <Section title="Recent contact" description="The latest touchpoints logged.">
+          {data.recentInteractions.length === 0 ? (
+            <div className="p-4">
+              <EmptyState icon={History} title="No interactions logged yet" />
+            </div>
+          ) : (
+            <Rows>
+              {data.recentInteractions.map((interaction) => (
+                <Row
+                  key={interaction.id}
+                  href={`/relationships/${interaction.relationshipId}`}
+                  className="py-2.5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="truncate text-sm font-medium text-ink">
+                      {interaction.relationshipName}
+                    </p>
+                    <span className="tabular shrink-0 text-xs text-ink-muted">
+                      {formatDateCompact(interaction.occurredAt, now)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 line-clamp-1 text-xs text-ink-secondary">
+                    {interaction.summary}
+                  </p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <InteractionChannelBadge channel={interaction.channel} />
+                    {interaction.projectName ? (
+                      <span className="truncate text-xs text-ink-muted">
+                        {interaction.projectName}
+                      </span>
+                    ) : null}
+                  </div>
+                </Row>
+              ))}
+            </Rows>
+          )}
+        </Section>
       </div>
 
-      <p className="flex items-center gap-1.5 text-xs text-ink-muted">
-        <Handshake className="size-3.5" aria-hidden="true" />
-        All figures derive from synthetic data seeded for demonstration.
+      <p className="border-t border-line pt-4 text-xs text-ink-muted">
+        Synthetic data, seeded for demonstration. Nothing here is connected to a
+        live system.{" "}
+        <Link href="/relationships" className="text-accent hover:underline">
+          Browse relationships
+        </Link>
       </p>
     </div>
   );

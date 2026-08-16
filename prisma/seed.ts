@@ -79,10 +79,21 @@ type TeamKey = (typeof TEAM)[number]["key"];
 
 const ACCOUNTS = [
   {
+    // Deliberately trivial, for demonstrations and for reviewers who should not
+    // have to copy a long string off a screen. It bypasses the normal password
+    // rules because the seed hashes directly rather than going through
+    // validatePassword. Listed first in the README's "remove before real data"
+    // note for the same reason it exists: it is not a real credential.
+    email: "admin",
+    password: "admin",
+    role: "ADMIN",
+    member: "avery" as TeamKey,
+  },
+  {
     email: "admin@viemostudio.example",
     password: "viemo-admin-2026",
     role: "ADMIN",
-    member: "avery" as TeamKey,
+    member: "priya" as TeamKey,
   },
   {
     email: "member@viemostudio.example",

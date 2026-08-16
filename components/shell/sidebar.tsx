@@ -12,103 +12,139 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { logoutAction } from "@/lib/auth/actions";
-import { UserRoleBadge } from "@/components/domain/badges";
+
+export type NavCounts = {
+  /** Relationships past their agreed cadence. */
+  overdue: number;
+  /** Projects overdue or blocked. */
+  atRisk: number;
+};
 
 type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
-};
-
-const NAV: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/relationships", label: "Relationships", icon: Handshake },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-];
-
-const ADMIN_NAV: NavItem = {
-  href: "/admin",
-  label: "Administration",
-  icon: ShieldCheck,
+  /** Count shown on the right, and whether it is a problem or just a total. */
+  badge?: { value: number; urgent?: boolean };
 };
 
 export function Sidebar({
   user,
+  counts,
 }: {
   user: { name: string; email: string; role: string };
+  counts: NavCounts;
 }) {
   const pathname = usePathname();
-  const items = user.role === "ADMIN" ? [...NAV, ADMIN_NAV] : NAV;
 
-  function isActive(href: string): boolean {
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }
+  const items: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    {
+      href: "/relationships",
+      label: "Relationships",
+      icon: Handshake,
+      badge: counts.overdue > 0 ? { value: counts.overdue, urgent: true } : undefined,
+    },
+    {
+      href: "/projects",
+      label: "Projects",
+      icon: FolderKanban,
+      badge: counts.atRisk > 0 ? { value: counts.atRisk, urgent: true } : undefined,
+    },
+  ];
+
+  const adminItems: NavItem[] =
+    user.role === "ADMIN"
+      ? [{ href: "/admin", label: "Administration", icon: ShieldCheck }]
+      : [];
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+
+  const initials = user.name
+    .split(" ")
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join("");
 
   return (
     <>
-      {/* Wide screens: a fixed rail. */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-hairline bg-surface lg:flex">
-        <div className="flex items-center gap-2.5 px-5 py-5">
-          <span
-            className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-sm font-bold text-accent-ink"
-            aria-hidden="true"
-          >
-            V
-          </span>
-          <span className="text-sm font-semibold text-ink">
-            Viemo Studio
-            <span className="block text-xs font-normal text-ink-muted">
+      {/* Wide screens: a fixed rail on its own surface. */}
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[15rem] flex-col border-r border-hairline bg-sunken lg:flex">
+        <div className="flex items-center gap-2.5 px-4 pt-5 pb-6">
+          <Mark />
+          <div className="min-w-0 leading-tight">
+            <p className="truncate text-[0.8125rem] font-semibold text-ink">
+              Viemo Studio
+            </p>
+            <p className="truncate text-[0.6875rem] text-ink-muted">
               Operations
-            </span>
-          </span>
+            </p>
+          </div>
         </div>
 
-        <nav className="flex-1 space-y-0.5 px-3 py-2">
-          {items.map((item) => (
-            <NavLink key={item.href} item={item} active={isActive(item.href)} />
-          ))}
+        <nav className="flex-1 space-y-6 px-3">
+          <Group label="Workspace">
+            {items.map((item) => (
+              <NavLink key={item.href} item={item} active={isActive(item.href)} />
+            ))}
+          </Group>
+
+          {adminItems.length > 0 ? (
+            <Group label="Manage">
+              {adminItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  active={isActive(item.href)}
+                />
+              ))}
+            </Group>
+          ) : null}
         </nav>
 
-        <div className="border-t border-line px-3 py-3">
-          <div className="px-2 py-1.5">
-            <p className="truncate text-sm font-medium text-ink">{user.name}</p>
-            <p className="mt-0.5 truncate text-xs text-ink-muted">
-              {user.email}
-            </p>
-            <div className="mt-2">
-              <UserRoleBadge role={user.role} />
+        <div className="border-t border-hairline p-3">
+          <div className="flex items-center gap-2.5 px-1 py-1.5">
+            <span
+              className="grid size-7 shrink-0 place-items-center rounded-full bg-accent-soft text-[0.6875rem] font-semibold text-accent"
+              aria-hidden="true"
+            >
+              {initials}
+            </span>
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-[0.8125rem] font-medium text-ink">
+                {user.name}
+              </p>
+              <p className="truncate text-[0.6875rem] text-ink-muted">
+                {user.role.charAt(0) + user.role.slice(1).toLowerCase()}
+              </p>
             </div>
           </div>
           <form action={logoutAction}>
             <button
               type="submit"
-              className="mt-1 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-ink-secondary hover:bg-sunken hover:text-ink"
+              className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[0.8125rem] text-ink-secondary transition-colors hover:bg-surface hover:text-ink"
             >
-              <LogOut className="size-4 shrink-0" aria-hidden="true" />
+              <LogOut className="size-3.5 shrink-0" aria-hidden="true" />
               Sign out
             </button>
           </form>
         </div>
       </aside>
 
-      {/* Narrow screens: a top bar with the same destinations. */}
-      <header className="sticky top-0 z-20 border-b border-hairline bg-surface lg:hidden">
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
+      {/* Narrow screens: the same destinations as a top bar. */}
+      <header className="sticky top-0 z-20 border-b border-hairline bg-sunken lg:hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex items-center gap-2">
-            <span
-              className="grid size-7 place-items-center rounded-lg bg-accent text-xs font-bold text-accent-ink"
-              aria-hidden="true"
-            >
-              V
-            </span>
-            <span className="text-sm font-semibold text-ink">
+            <Mark small />
+            <span className="text-[0.8125rem] font-semibold text-ink">
               Viemo Studio Operations
             </span>
           </div>
           <form action={logoutAction}>
             <button
               type="submit"
-              className="rounded-lg p-1.5 text-ink-secondary hover:bg-sunken hover:text-ink"
+              className="rounded-md p-1.5 text-ink-secondary hover:bg-surface hover:text-ink"
               aria-label="Sign out"
             >
               <LogOut className="size-4" aria-hidden="true" />
@@ -116,7 +152,7 @@ export function Sidebar({
           </form>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-2">
-          {items.map((item) => (
+          {[...items, ...adminItems].map((item) => (
             <NavLink
               key={item.href}
               item={item}
@@ -130,6 +166,48 @@ export function Sidebar({
   );
 }
 
+/**
+ * The mark. A plain square with a letter in it reads as a placeholder, so this
+ * is a rounded square with a diagonal split — enough to look chosen rather
+ * than defaulted, and it survives being 20 pixels wide.
+ */
+function Mark({ small }: { small?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "relative grid shrink-0 place-items-center overflow-hidden rounded-[0.4rem] bg-accent",
+        small ? "size-6" : "size-7",
+      )}
+      aria-hidden="true"
+    >
+      <span className="absolute inset-0 bg-ink/15 [clip-path:polygon(0_100%,100%_0,100%_100%)]" />
+      <span
+        className={cn(
+          "relative font-bold text-accent-ink",
+          small ? "text-[0.625rem]" : "text-[0.6875rem]",
+        )}
+      >
+        V
+      </span>
+    </span>
+  );
+}
+
+function Group({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="eyebrow px-2.5 pb-1.5">{label}</p>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  );
+}
+
 function NavLink({
   item,
   active,
@@ -140,23 +218,40 @@ function NavLink({
   compact?: boolean;
 }) {
   const Icon = item.icon;
+
   return (
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium whitespace-nowrap",
+        "group flex items-center gap-2.5 rounded-md text-[0.8125rem] font-medium whitespace-nowrap transition-colors",
+        compact ? "px-2.5 py-1.5 text-xs" : "px-2.5 py-[0.4375rem]",
         active
-          ? "bg-accent-soft text-accent"
-          : "text-ink-secondary hover:bg-sunken hover:text-ink",
-        compact && "px-3 py-1.5 text-xs",
+          ? "bg-surface text-ink shadow-[0_1px_2px_rgba(11,11,11,0.05)]"
+          : "text-ink-secondary hover:bg-surface/60 hover:text-ink",
       )}
     >
       <Icon
-        className={cn("shrink-0", compact ? "size-3.5" : "size-4")}
+        className={cn(
+          "shrink-0 transition-colors",
+          compact ? "size-3.5" : "size-4",
+          active ? "text-accent" : "text-ink-muted group-hover:text-ink-secondary",
+        )}
         aria-hidden="true"
       />
-      {item.label}
+      <span className="flex-1">{item.label}</span>
+      {item.badge ? (
+        <span
+          className={cn(
+            "tabular rounded px-1.5 py-px text-[0.625rem] font-semibold",
+            item.badge.urgent
+              ? "bg-critical-soft text-critical"
+              : "bg-surface text-ink-muted",
+          )}
+        >
+          {item.badge.value}
+        </span>
+      ) : null}
     </Link>
   );
 }

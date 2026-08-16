@@ -68,6 +68,36 @@ export type RecentInteractionRow = {
   loggedByName: string;
 };
 
+/**
+ * The two numbers the navigation rail carries.
+ *
+ * Kept separate from `getDashboardData` because it runs on every page in the
+ * shell, not only the dashboard — it selects the four columns cadence needs
+ * and the task statuses risk needs, and nothing else.
+ */
+export async function getNavCounts(now: Date = new Date()) {
+  const [relationships, projects] = await Promise.all([
+    prisma.relationship.findMany({
+      select: {
+        cadenceDays: true,
+        lastContactAt: true,
+        status: true,
+        createdAt: true,
+      },
+    }),
+    prisma.project.findMany({
+      select: { status: true, dueDate: true, tasks: { select: { status: true } } },
+    }),
+  ]);
+
+  return {
+    overdue: relationships.filter(
+      (r) => computeCadence(r, now).status === "OVERDUE",
+    ).length,
+    atRisk: projects.filter((p) => computeProjectHealth(p, now).isAtRisk).length,
+  };
+}
+
 export async function getDashboardData(now: Date = new Date()) {
   const [relationships, projects, upcomingTasks, recentInteractions] =
     await Promise.all([

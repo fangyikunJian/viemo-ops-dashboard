@@ -146,7 +146,40 @@
   --color-series-7: var(--series-7);
   --color-series-8: var(--series-8);
 
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /*
+   * Type scale — five steps and no more.
+   *
+   * The interface was flat before this: nearly everything sat at 14px, which
+   * meant nothing could be more important than anything else and the eye had
+   * no entry point. These five steps are far enough apart to read as different
+   * ranks rather than as accidents.
+   *
+   * display  a single figure that answers "is everything okay?"
+   * title    the name of the thing you are looking at
+   * body     the default
+   * label    supporting text and secondary columns
+   * micro    eyebrow labels, in caps, above a group
+   */
+  --text-display: 2.5rem;
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 640;
+
+  --text-figure: 1.5rem;
+  --text-figure--line-height: 1.1;
+  --text-figure--letter-spacing: -0.02em;
+  --text-figure--font-weight: 620;
+
+  --text-title: 1.0625rem;
+  --text-title--line-height: 1.35;
+  --text-title--letter-spacing: -0.01em;
+
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1rem;
+  --text-micro--letter-spacing: 0.04em;
 }
 
 html {
@@ -163,6 +196,42 @@ body {
 /* Columns of numbers line up; standalone figures keep proportional digits. */
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Eyebrow label — small caps above a group.
+ *
+ * Does the work a bordered card was doing before: it names a group without
+ * drawing a box around it, so a page can carry many groups without becoming a
+ * grid of identical rectangles.
+ */
+.eyebrow {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/*
+ * Status rail — a 3px bar down the left edge of a row.
+ *
+ * Carries urgency at row level without a badge competing for the space where
+ * the name goes. Scanning a list of forty, the eye picks up the rail before it
+ * reads a word. Set --rail-colour on the row.
+ */
+.rail {
+  position: relative;
+}
+
+.rail::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 3px;
+  background: var(--rail-colour, transparent);
 }
 
 /* Visible only to screen readers — used for status text beside colour cues. */

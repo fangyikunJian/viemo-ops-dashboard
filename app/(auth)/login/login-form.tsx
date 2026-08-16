@@ -15,14 +15,18 @@ export function LoginForm() {
     <form action={formAction} className="space-y-4">
       <FormError message={state.error} />
 
-      <Field label="Email" htmlFor="email" required>
+      {/* type="text", not "email": the demonstration account signs in as
+          `admin`, and the browser's built-in email validation would refuse it
+          before the form ever reached the server. */}
+      <Field label="Email or username" htmlFor="email" required>
         <Input
           id="email"
           name="email"
-          type="email"
+          type="text"
+          inputMode="email"
           autoComplete="username"
           required
-          placeholder="you@viemostudio.example"
+          placeholder="admin"
         />
       </Field>
 
