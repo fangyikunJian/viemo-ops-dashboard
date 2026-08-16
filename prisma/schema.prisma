@@ -1,0 +1,252 @@
+// The Viemo Studio Operations Dashboard — shared data model
+//
+// This schema is the technical spine described in the project brief: the BRM
+// module and the Project Management module are built on top of it and meet at
+// exactly two seams (Project.relationshipId, Interaction.projectId). Both seams
+// are nullable so either module can be developed and demonstrated on its own.
+//
+// SQLite has no native enum type, so status/type columns are stored as String.
+// The permitted values are defined once in lib/domain/enums.ts and validated
+// with zod at every write. Comments here mirror those definitions.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Identity & access
+// ═══════════════════════════════════════════════════════════════════
+
+/// A login account. Separate from TeamMember: not every person the business
+/// tracks work against needs an account, and accounts can be deactivated
+/// without erasing the work history attributed to the person.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  /// ADMIN | MEMBER | VIEWER — see lib/auth/roles.ts
+  role         String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  teamMemberId String?     @unique
+  teamMember   TeamMember? @relation(fields: [teamMemberId], references: [id], onDelete: SetNull)
+  sessions     Session[]
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// A person inside the venture. Owns relationships, leads projects, is assigned
+/// tasks and logs interactions.
+model TeamMember {
+  id        String   @id @default(cuid())
+  name      String
+  title     String?
+  email     String?  @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user               User?
+  ownedRelationships Relationship[] @relation("RelationshipOwner")
+  loggedInteractions Interaction[]  @relation("InteractionLogger")
+  ledProjects        Project[]      @relation("ProjectLead")
+  assignedTasks      Task[]         @relation("TaskAssignee")
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Shared
+// ═══════════════════════════════════════════════════════════════════
+
+/// Optional grouping for relationships that sit under the same legal entity.
+/// A relationship does not require one — an independent advisor is a
+/// relationship with no organisation, and that is the normal case, not an edge
+/// case to be modelled around.
+model Organisation {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  website   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  relationships Relationship[]
+}
+
+/// Free-form labels shared by both modules.
+model Tag {
+  id     String @id @default(cuid())
+  label  String @unique
+  colour String @default("slate")
+
+  relationships Relationship[]
+  projects      Project[]
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Business Relationship Management
+// ═══════════════════════════════════════════════════════════════════
+
+/// The first-class entity of the BRM module.
+///
+/// Unlike a CRM, where the organising unit is a deal moving through a pipeline
+/// toward a close, the organising unit here is the relationship itself. It has
+/// no terminal "won" state, its value flows in both directions, and its health
+/// is measured by contact rhythm rather than by revenue.
+model Relationship {
+  id String @id @default(cuid())
+
+  /// Display name: a person ("Dr Sarah Chen") or an entity ("Lumen Ventures").
+  name String
+  /// ADVISOR | INVESTOR | DELIVERY_PARTNER | INSTITUTIONAL | SUPPLIER | CUSTOMER
+  type String
+  /// PROSPECTIVE | ACTIVE | DORMANT | ARCHIVED — a lifecycle, not a funnel.
+  status String
+
+  /// Agreed contact rhythm in days. Null means the relationship is deliberately
+  /// not on a cadence, which is different from being overdue.
+  cadenceDays Int?
+  /// Denormalised from the most recent substantive Interaction. Maintained in a
+  /// transaction by lib/brm/record-interaction.ts, which is the only code
+  /// permitted to write it. See the design doc for why this is stored.
+  lastContactAt DateTime?
+
+  /// Bidirectional value — the BRM counterpart to a CRM's deal size.
+  valueToUs   String?
+  valueToThem String?
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId        String
+  owner          TeamMember    @relation("RelationshipOwner", fields: [ownerId], references: [id])
+  organisationId String?
+  organisation   Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+
+  contacts     Contact[]
+  interactions Interaction[]
+  projects     Project[]
+  tags         Tag[]
+
+  @@index([type])
+  @@index([status])
+  @@index([ownerId])
+  @@index([lastContactAt])
+}
+
+/// A person to speak to within a relationship. A relationship that is itself an
+/// individual normally has one contact; an institutional partner may have many.
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  role      String?
+  email     String?
+  phone     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  relationshipId String
+  relationship   Relationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+
+  @@index([relationshipId])
+}
+
+/// A logged touchpoint. Only substantive interactions reset the cadence clock:
+/// forwarding a link is contact, but it is not the conversation the cadence
+/// exists to ensure happens.
+model Interaction {
+  id            String   @id @default(cuid())
+  occurredAt    DateTime
+  /// MEETING | CALL | EMAIL | EVENT | MESSAGE
+  channel       String
+  summary       String
+  isSubstantive Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  relationshipId String
+  relationship   Relationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  loggedById     String
+  loggedBy       TeamMember   @relation("InteractionLogger", fields: [loggedById], references: [id])
+
+  /// Seam into the PM module: which project this touchpoint was about.
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([relationshipId, occurredAt])
+  @@index([projectId])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Project Management
+// ═══════════════════════════════════════════════════════════════════
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  /// PLANNING | ACTIVE | ON_HOLD | DONE | CANCELLED
+  status      String
+  startDate   DateTime?
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  leadId String
+  lead   TeamMember @relation("ProjectLead", fields: [leadId], references: [id])
+
+  /// Seam into the BRM module: which relationship this project is being
+  /// delivered for or with.
+  relationshipId String?
+  relationship   Relationship? @relation(fields: [relationshipId], references: [id], onDelete: SetNull)
+
+  tasks        Task[]
+  interactions Interaction[]
+  tags         Tag[]
+
+  @@index([status])
+  @@index([leadId])
+  @@index([dueDate])
+  @@index([relationshipId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  /// TODO | IN_PROGRESS | BLOCKED | DONE
+  status      String
+  /// LOW | MEDIUM | HIGH | URGENT
+  priority    String
+  dueDate     DateTime?
+  /// Position within its status column on the project board.
+  order       Int       @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  projectId  String
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId String?
+  assignee   TeamMember? @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, status])
+  @@index([assigneeId])
+  @@index([dueDate])
+}

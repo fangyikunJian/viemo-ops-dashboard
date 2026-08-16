@@ -1,26 +1,160 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Design tokens.
+ *
+ * Colours come from a validated data-visualisation palette rather than being
+ * chosen by eye. Two consequences worth keeping:
+ *
+ *   - the four status colours are fixed and reserved. They mean good / warning /
+ *     serious / critical and are never reused as decoration. Every place one
+ *     appears it is paired with an icon and a text label, because two of them
+ *     sit below 3:1 contrast on the light surface and colour alone would not
+ *     carry the meaning for everyone.
+ *   - the categorical hues are assigned in a fixed order, never cycled, so a
+ *     relationship type keeps the same colour everywhere it is drawn.
+ *
+ * Dark mode is a selected set of steps for the dark surface, not an inversion.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  /* Surfaces */
+  --plane: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-sunken: #f2f1ed;
+
+  /* Ink */
+  --ink: #0b0b0b;
+  --ink-secondary: #52514e;
+  --ink-muted: #898781;
+
+  /* Lines */
+  --line: #e1e0d9;
+  --border: rgba(11, 11, 11, 0.1);
+
+  /* Accent — categorical slot 1 */
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --accent-soft: #eaf2fd;
+
+  /* Status — fixed, never themed, always paired with an icon and a label */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+  --status-good-soft: #e8f6e8;
+  --status-warning-soft: #fef5e1;
+  --status-critical-soft: #fbeaea;
+
+  /* Categorical series, in fixed order */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --series-8: #e34948;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --plane: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-sunken: #131312;
+
+    --ink: #ffffff;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+
+    --line: #2c2c2a;
+    --border: rgba(255, 255, 255, 0.1);
+
+    --accent: #3987e5;
+    --accent-ink: #06121f;
+    --accent-soft: #16283c;
+
+    --status-good-soft: #10240f;
+    --status-warning-soft: #2b2007;
+    --status-critical-soft: #2c1111;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
   }
 }
 
+@theme inline {
+  --color-plane: var(--plane);
+  --color-surface: var(--surface);
+  --color-sunken: var(--surface-sunken);
+
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+
+  --color-line: var(--line);
+  --color-hairline: var(--border);
+
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-good: var(--status-good);
+  --color-warning: var(--status-warning);
+  --color-serious: var(--status-serious);
+  --color-critical: var(--status-critical);
+  --color-good-soft: var(--status-good-soft);
+  --color-warning-soft: var(--status-warning-soft);
+  --color-critical-soft: var(--status-critical-soft);
+
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
+  --color-series-6: var(--series-6);
+  --color-series-7: var(--series-7);
+  --color-series-8: var(--series-8);
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  color-scheme: light dark;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--plane);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Columns of numbers line up; standalone figures keep proportional digits. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible only to screen readers — used for status text beside colour cues. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

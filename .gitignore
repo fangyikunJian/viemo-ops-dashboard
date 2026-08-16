@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +40,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prisma — generated client and the local SQLite database
+/generated
+*.db
+*.db-journal
+
+# Vendor agent tooling installed by `prisma init` — reference docs for AI
+# coding assistants, not project code. Regenerated on demand; excluded so the
+# repository stays reviewable.
+/.agents
+/.windsurf
+/.claude/skills
+/skills-lock.json
