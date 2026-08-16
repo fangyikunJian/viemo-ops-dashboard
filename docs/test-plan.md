@@ -46,7 +46,7 @@ npm run test:coverage
 
 ## 3. Results
 
-**86 tests across 6 files. All passing.** Runtime 2.6 seconds.
+**94 tests across 7 files. All passing.**
 
 | File | Tests | Covers |
 |---|---|---|
@@ -54,8 +54,12 @@ npm run test:coverage
 | `lib/pm/project-health.test.ts` | 19 | Progress, overdue, due-soon, risk, roll-ups |
 | `lib/auth/permissions.test.ts` | 12 | Every role against every action |
 | `lib/auth/password.test.ts` | 9 | Hashing, verification, malformed input |
+| `lib/auth/rate-limit.test.ts` | 8 | Sign-in throttling, window behaviour, per-address isolation |
 | `lib/integration/adapters.test.ts` | 6 | The extension port and both adapters |
 | `tests/integration/record-interaction.test.ts` | 13 | The `lastContactAt` invariant, against a real database |
+
+Continuous integration runs typecheck, lint, tests, build and the seed on every
+push and pull request — `.github/workflows/ci.yml`.
 
 ### Coverage of the modules under test
 
@@ -238,9 +242,19 @@ strength of the code looking correct.
 | # | Step | Expected | Result |
 |---|---|---|---|
 | 7.1 | Narrow the window to phone width | Sidebar becomes a top bar; no horizontal page scroll; wide tables scroll inside their own container | TO RUN |
-| 7.2 | Switch the OS to dark mode | Readable throughout; status colours still distinguishable | TO RUN |
+| 7.2 | Switch the OS to dark mode | Readable throughout; status colours still distinguishable | PASS |
 | 7.3 | Tab through a form | Visible focus ring on every control | TO RUN |
-| 7.4 | Check every status colour | Each is accompanied by an icon and a written label | TO RUN |
+| 7.4 | Check every status colour | Each is accompanied by an icon and a written label | PASS |
+| 7.5 | Tab once from a fresh page load | A "Skip to main content" link appears and works | TO RUN |
+| 7.6 | Measure text contrast on every screen | No pair below its WCAG threshold — snippet in the compliance document | PASS (dashboard, relationships, projects; other screens TO RUN) |
+
+### 5.8 Accessibility
+
+Assessed in full in [compliance-and-standards.md](compliance-and-standards.md).
+Contrast, heading structure, control labelling and icon hiding were **measured**
+rather than inspected. **No assistive-technology testing has been done** — that
+is the largest remaining gap in the accessibility claim, and automated checks
+find perhaps a third of real barriers.
 
 ---
 
@@ -252,6 +266,9 @@ strength of the code looking correct.
 | The Administration page failed to load with `The "original" argument must be of type Function` | A client component imported a constant from `lib/auth/password`, pulling `node:crypto` into the browser bundle, where `promisify(scrypt)` received `undefined` | Rules split into `lib/auth/password-rules.ts` with no Node imports; the client imports that |
 | Two neighbouring relationships showed identical interaction summaries | The seed always started its phrasing list at index 0 | Per-relationship offset into the phrasing list |
 | All six relationship types had exactly three records, which read as fabricated | Seed coincidence | More relationships added, with a distribution closer to a real studio's |
+| Six WCAG 2.2 AA contrast failures across the design tokens | The reference palette specifies colours for **chart marks**; WCAG holds text to a stricter bar. Applying a validated chart palette to interface text is not the same as being compliant. | Status roles split into a `-mark` value (palette preserved) and a measured text step. Re-measured: zero failures across three screens in both modes. See [ADR-0008](adr/0008-step-palette-colours-for-contrast.md) |
+| No skip link — WCAG 2.4.1 Bypass Blocks, **Level A** | The navigation rail repeats on every screen with no way past it | Skip link added as the first item in the tab order |
+| Sign-in was an unlimited password oracle | No throttling; scrypt made each attempt expensive but did not bound the number of attempts | 8 attempts per 15 minutes per address, keyed by email so one person cannot lock out an office |
 
 ---
 

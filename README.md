@@ -152,10 +152,14 @@ tests/integration/       Tests that need a real database
 
 | Document | Contents |
 |---|---|
+| [Team handbook](CONTRIBUTING.md) | **Start here if you are working on this.** Setup, the three architectural rules, where things go, definition of done |
 | [Design and architecture](docs/design-and-architecture.md) | The data model, module boundaries, key decisions and the reasoning behind them |
+| [Architecture decisions](docs/adr/README.md) | Eight ADRs — why each choice was made, what was rejected, and what it cost |
 | [BRM taxonomy](docs/brm-taxonomy.md) | Every relationship type and status defined, and how the model differs from a CRM |
 | [User guide](docs/user-guide.md) | How to use the delivered application |
-| [Test plan and results](docs/test-plan.md) | What is tested, how, and what the last run reported |
+| [Test plan and results](docs/test-plan.md) | What is tested, how, what the last run reported, and what is still to run |
+| [Compliance and standards](docs/compliance-and-standards.md) | Assessment against WCAG 2.2 AA, the Privacy Act 1988 and the Essential Eight — including what is **not** met |
+| [Demonstration guide](docs/demonstration-guide.md) | A scripted walkthrough for the client meeting and the final presentation |
 
 ---
 
