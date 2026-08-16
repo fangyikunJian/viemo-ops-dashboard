@@ -412,7 +412,7 @@ const RELATIONSHIPS: RelationshipSeed[] = [
     valueToUs: "Student placements, research access, credibility",
     valueToThem: "Industry projects for capstone students; employment outcomes",
     notes:
-      "Placement cohort runs each semester. Schedule 2 agreement is on file (AA4157).",
+      "Placement cohort runs each semester. Industry agreement is on file.",
     contacts: [
       {
         name: "Dr Miriam Halloran",
