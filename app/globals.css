@@ -23,25 +23,40 @@
   --surface: #fcfcfb;
   --surface-sunken: #f2f1ed;
 
-  /* Ink */
+  /* Ink
+   * --ink-muted is a step darker than the reference palette's axis-label grey.
+   * That grey measures 3.5:1 on this surface, which is fine for a chart axis
+   * and fails WCAG 1.4.3 for the interface text we use it for. Measured 5.11:1
+   * on surface, 4.98:1 on plane, 4.65:1 on sunken. */
   --ink: #0b0b0b;
   --ink-secondary: #52514e;
-  --ink-muted: #898781;
+  --ink-muted: #6e6c66;
 
   /* Lines */
   --line: #e1e0d9;
   --border: rgba(11, 11, 11, 0.1);
 
-  /* Accent — categorical slot 1 */
-  --accent: #2a78d6;
+  /* Accent — categorical slot 1, stepped down one for contrast.
+   * The palette's slot-1 blue gives 4.42:1 under white button text and 3.91:1
+   * as text on the soft tint; both fail AA. This step measures 5.39:1 and
+   * 4.78:1 respectively. */
+  --accent: #256abf;
   --accent-ink: #ffffff;
   --accent-soft: #eaf2fd;
 
-  /* Status — fixed, never themed, always paired with an icon and a label */
-  --status-good: #0ca30c;
+  /* Status — reserved roles, always paired with an icon and a label.
+   *
+   * Two values per role. The `-mark` value is the reference palette's, kept
+   * exactly, for anything drawn rather than read. The plain value is a text
+   * step that clears 4.5:1 on both the surface and the role's own soft tint —
+   * the palette's marks are specified for chart marks, and WCAG holds text to
+   * a stricter bar than it holds a bar chart. */
+  --status-good: #006300;
+  --status-good-mark: #0ca30c;
   --status-warning: #fab219;
   --status-serious: #ec835a;
-  --status-critical: #d03b3b;
+  --status-critical: #b52f2f;
+  --status-critical-mark: #d03b3b;
   --status-good-soft: #e8f6e8;
   --status-warning-soft: #fef5e1;
   --status-critical-soft: #fbeaea;
@@ -70,9 +85,16 @@
     --line: #2c2c2a;
     --border: rgba(255, 255, 255, 0.1);
 
-    --accent: #3987e5;
+    /* Stepped up two from the dark slot-1 blue, which reads 4.11:1 as text on
+     * its own soft tint. This step measures 5.98:1. */
+    --accent: #6da7ec;
     --accent-ink: #06121f;
     --accent-soft: #16283c;
+
+    /* The good mark clears 4.5:1 on the dark tint unaided, so it needs no
+     * separate text step here. The critical mark reads 3.66:1 and does. */
+    --status-good: #0ca30c;
+    --status-critical: #ec6b6b;
 
     --status-good-soft: #10240f;
     --status-warning-soft: #2b2007;
@@ -106,9 +128,11 @@
   --color-accent-soft: var(--accent-soft);
 
   --color-good: var(--status-good);
+  --color-good-mark: var(--status-good-mark);
   --color-warning: var(--status-warning);
   --color-serious: var(--status-serious);
   --color-critical: var(--status-critical);
+  --color-critical-mark: var(--status-critical-mark);
   --color-good-soft: var(--status-good-soft);
   --color-warning-soft: var(--status-warning-soft);
   --color-critical-soft: var(--status-critical-soft);
@@ -157,4 +181,41 @@ body {
 *:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/*
+ * Skip link — WCAG 2.4.1 Bypass Blocks (Level A).
+ *
+ * The navigation rail repeats on every screen. Without this, a keyboard or
+ * screen-reader user tabs through every destination before reaching the page
+ * content, on every page. Hidden until focused, then pinned to the top left.
+ */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 50;
+  padding: 0.5rem 0.875rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: top 120ms ease-out;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+/* Respect a reduced-motion preference — WCAG 2.3.3. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
