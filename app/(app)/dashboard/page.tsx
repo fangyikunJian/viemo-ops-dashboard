@@ -66,19 +66,21 @@ export default async function DashboardPage() {
         ) : (
           <>
             <h1 className="mt-2 max-w-3xl text-display text-ink">
+              {/* The figure wears the mono face while the sentence stays in
+                  the sans — the number is the datum, the rest is prose. */}
               {OVERDUE > 0 ? (
                 <>
+                  <span className="tabular text-critical">{OVERDUE}</span>{" "}
                   <span className="text-critical">
-                    {OVERDUE} relationship{OVERDUE === 1 ? "" : "s"}
+                    relationship{OVERDUE === 1 ? "" : "s"}
                   </span>{" "}
                   need{OVERDUE === 1 ? "s" : ""} contact
                 </>
               ) : (
                 <>
-                  <span className="text-ink">
-                    {DUE_SOON} relationship{DUE_SOON === 1 ? "" : "s"}
-                  </span>{" "}
-                  fall{DUE_SOON === 1 ? "s" : ""} due shortly
+                  <span className="tabular">{DUE_SOON}</span> relationship
+                  {DUE_SOON === 1 ? "" : "s"} fall{DUE_SOON === 1 ? "s" : ""}{" "}
+                  due shortly
                 </>
               )}
               <span className="text-ink-muted">.</span>

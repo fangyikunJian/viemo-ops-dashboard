@@ -146,8 +146,17 @@
   --color-series-7: var(--series-7);
   --color-series-8: var(--series-8);
 
+  /*
+   * IBM Plex, self-hosted by next/font at build time. The stack behind each is
+   * the fallback for the moments before the face loads and for anywhere the
+   * download failed — chosen so the metrics do not jump when it swaps.
+   */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    var(--font-sans-face), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-mono:
+    var(--font-mono-face), ui-monospace, "SFMono-Regular", "Cascadia Mono",
+    Menlo, monospace;
 
   /*
    * Type scale — five steps and no more.
@@ -163,15 +172,18 @@
    * label    supporting text and secondary columns
    * micro    eyebrow labels, in caps, above a group
    */
-  --text-display: 2.5rem;
-  --text-display--line-height: 1;
-  --text-display--letter-spacing: -0.03em;
-  --text-display--font-weight: 640;
+  /* Plex sets a little narrower than a grotesque, so the display step gains a
+   * touch of size and loses a touch of negative tracking compared with the
+   * system stack it replaced. */
+  --text-display: 2.625rem;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.025em;
+  --text-display--font-weight: 600;
 
-  --text-figure: 1.5rem;
+  --text-figure: 1.625rem;
   --text-figure--line-height: 1.1;
   --text-figure--letter-spacing: -0.02em;
-  --text-figure--font-weight: 620;
+  --text-figure--font-weight: 500;
 
   --text-title: 1.0625rem;
   --text-title--line-height: 1.35;
@@ -193,9 +205,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Columns of numbers line up; standalone figures keep proportional digits. */
+/*
+ * Figures wear the mono face.
+ *
+ * In a tool whose whole argument is a number, giving numbers their own voice
+ * is not decoration. Monospaced digits align down a column by construction,
+ * and the contrast between the two faces tells the reader at a glance which
+ * part of a row is data and which is prose.
+ */
 .tabular {
+  font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 /*
@@ -206,11 +227,12 @@ body {
  * grid of identical rectangles.
  */
 .eyebrow {
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
   line-height: 1rem;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-muted);
 }
 
