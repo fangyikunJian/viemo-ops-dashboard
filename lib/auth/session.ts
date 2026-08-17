@@ -26,6 +26,24 @@ import type { UserRole } from "@/lib/domain/enums";
 const SESSION_COOKIE = "viemo_session";
 const SESSION_TTL_DAYS = 7;
 
+/**
+ * Whether the session cookie is marked `Secure`.
+ *
+ * It should be, and in production it is by default. The override exists for one
+ * real situation: a demonstration deployment reachable only by IP address.
+ * Certificate authorities will not issue for a bare IP, so such a host can only
+ * speak HTTP — and a `Secure` cookie is never returned over HTTP, so sign-in
+ * appears to succeed and then bounces straight back to the sign-in screen with
+ * no error anywhere to explain it.
+ *
+ * Set COOKIE_SECURE=false only on a host without TLS. Anywhere with a domain
+ * and a certificate should leave it alone.
+ */
+const COOKIE_SECURE =
+  process.env.COOKIE_SECURE !== undefined
+    ? process.env.COOKIE_SECURE === "true"
+    : process.env.NODE_ENV === "production";
+
 /** The shape the rest of the application sees. Never carries the password hash. */
 export type SessionUser = {
   id: string;
@@ -98,7 +116,7 @@ export async function signIn(
   jar.set(SESSION_COOKIE, sessionId, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     expires: expiresAt,
     path: "/",
   });
