@@ -169,6 +169,8 @@ tests/integration/       Tests that need a real database
 | [Test plan and results](docs/test-plan.md) | What is tested, how, what the last run reported, and what is still to run |
 | [Compliance and standards](docs/compliance-and-standards.md) | Assessment against WCAG 2.2 AA, the Privacy Act 1988 and the Essential Eight — including what is **not** met |
 | [Demonstration guide](docs/demonstration-guide.md) | A scripted walkthrough for the client meeting and the final presentation |
+| [MVP flows](docs/flows.md) | Every flow as a diagram — IA, the core loop, cadence, risk, authorisation, the data model |
+| [Team briefing deck](docs/Viemo-UG-S2-28-Team-Briefing.pptx) | 11 slides for the team. Regenerate with `docs/team-briefing-deck.build.js` |
 
 ---
 

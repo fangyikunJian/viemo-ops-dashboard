@@ -273,5 +273,8 @@ Flag them in the group chat before you open the PR.
 | [BRM taxonomy](docs/brm-taxonomy.md) | What a term means before you use it in code |
 | [Test plan](docs/test-plan.md) | What is covered, what is not, what still needs running |
 | [Compliance and standards](docs/compliance-and-standards.md) | Accessibility, privacy and security obligations |
+| [MVP flows](docs/flows.md) | The diagram of a flow you are about to change |
+| [Design system](docs/design-system.md) | Tokens, components and the contracts behind them |
 | [Demonstration guide](docs/demonstration-guide.md) | Before you present to the client |
 | [User guide](docs/user-guide.md) | What the application does, from a user's side |
+| [Team briefing deck](docs/Viemo-UG-S2-28-Team-Briefing.pptx) | The ten-minute version of all of the above |
