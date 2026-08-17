@@ -1,0 +1,74 @@
+name: Documentation site
+
+# Publishes the documentation site to GitHub Pages on every push to main that
+# touches a document or the generator.
+#
+# Only the docs are published. The application itself cannot run on Pages —
+# it has Server Components that read a database, server actions that write to
+# one, and cookie-based sessions, none of which exist on a static host. The
+# application is deployed separately.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "docs-site/**"
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push waits rather than cancelling, so the
+# published site always matches a real commit.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the documentation site
+        run: node docs-site/build.mjs
+
+      - name: Check every page was generated
+        # A missing source file only warns during the build, so fail here
+        # rather than publishing a site with holes in its navigation.
+        run: |
+          count=$(find docs-site/dist -name '*.html' | wc -l)
+          echo "Generated $count pages"
+          test "$count" -ge 22 || { echo "Expected at least 22 pages"; exit 1; }
+          test -f docs-site/dist/index.html
+          test -f docs-site/dist/flows.html
+          test -f docs-site/dist/styles.css
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
