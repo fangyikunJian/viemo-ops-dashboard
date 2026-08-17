@@ -16,6 +16,10 @@ const eslintConfig = defineConfig([
     // are both written by tooling and both carry their own lint directives.
     "generated/**",
     "coverage/**",
+    // A standalone CommonJS script run by hand with `node` to rebuild the team
+    // deck. It is not part of the application and does not share its module
+    // system, so the app's rules do not apply to it.
+    "docs/*.build.js",
   ]),
 ]);
 
