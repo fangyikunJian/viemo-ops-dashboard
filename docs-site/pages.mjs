@@ -46,6 +46,12 @@ export const SECTIONS = [
         blurb: "Every term defined; how it differs from a CRM",
       },
       {
+        slug: "client-alignment",
+        source: "docs/client-alignment.md",
+        title: "Client alignment",
+        blurb: "Where the brief and the client's vision diverge, and what to ask",
+      },
+      {
         slug: "user-guide",
         source: "docs/user-guide.md",
         title: "User guide",
