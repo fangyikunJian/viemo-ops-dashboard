@@ -5,9 +5,13 @@
 // exactly two seams (Project.relationshipId, Interaction.projectId). Both seams
 // are nullable so either module can be developed and demonstrated on its own.
 //
-// SQLite has no native enum type, so status/type columns are stored as String.
-// The permitted values are defined once in lib/domain/enums.ts and validated
-// with zod at every write. Comments here mirror those definitions.
+// Status and type columns are stored as String rather than as native Postgres
+// enums. That began as a SQLite constraint and was kept deliberately: the
+// permitted values, their human definitions and their badge colours live
+// together in lib/domain/enums.ts, validated with zod at every write, so the
+// taxonomy in the type system, the interface and the documentation cannot
+// drift apart. A native enum would move half of that into a migration and
+// make adding a term a schema change. See docs/adr/0004.
 
 generator client {
   provider = "prisma-client"
@@ -15,7 +19,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ═══════════════════════════════════════════════════════════════════

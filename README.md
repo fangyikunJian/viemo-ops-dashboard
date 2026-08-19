@@ -44,18 +44,30 @@ substantive contact against an agreed cadence*. Full taxonomy in
 
 ## Running it
 
-Requires **Node.js 20.19+** (developed on 24) and npm.
+Requires **Node.js 20.19+** (developed on 24) and npm. No Docker, and no
+database to install.
 
 ```bash
 npm install
 ```
 
 ```bash
+cp .env.example .env
+```
+
+```bash
+npm run db:up
+```
+
+`db:up` starts a Postgres on your machine — Prisma ships it, so there is nothing
+to install and no container to run. Leave it running.
+
+```bash
 npm run setup
 ```
 
-`setup` applies the database migrations, generates the Prisma client and seeds
-the synthetic data. Then:
+`setup` generates the Prisma client, applies the migrations and seeds the
+synthetic data. Then:
 
 ```bash
 npm run dev
@@ -99,11 +111,13 @@ because the seed hashes directly rather than going through validation.
 | `npm run test:coverage` | Tests with a coverage report |
 | `npm run typecheck` | TypeScript, no emit |
 | `npm run lint` | ESLint |
+| `npm run db:up` | Start the local Postgres (leave it running) |
+| `npm run db:down` | Stop it |
 | `npm run db:migrate` | Create and apply a migration after a schema change |
 | `npm run db:reset` | Drop and rebuild the database |
 | `npm run db:seed` | Re-seed synthetic data |
 | `npm run db:studio` | Prisma Studio, to browse the database |
-| `npm run setup` | Migrate, generate and seed in one step |
+| `npm run setup` | Generate, migrate and seed in one step |
 
 ---
 
@@ -113,7 +127,7 @@ because the seed hashes directly rather than going through validation.
 |---|---|
 | **Next.js 16** (App Router) | One repository and one command to run. Server Components let pages read the database directly, so there is no API layer to keep in step with the UI. |
 | **TypeScript** | The domain vocabulary is expressed as types, so an invalid status cannot be written. |
-| **Prisma 7 + SQLite** | `prisma/schema.prisma` *is* the shared data model — one readable file, versioned migrations, no database server for a team member to install. |
+| **Prisma 7 + Postgres** | `prisma/schema.prisma` *is* the shared data model — one readable file, versioned migrations. Postgres matches the client's Supabase stack, and `npm run db:up` gives a local one with no Docker and nothing to install. See [ADR-0009](docs/adr/0009-postgres-not-sqlite.md). |
 | **Tailwind CSS v4** | Design tokens in `app/globals.css`; no separate stylesheet to drift. |
 | **Zod** | One schema validates every write, on the server. |
 | **Vitest** | Fast, and the domain logic is pure functions, so most of it needs no database. |
@@ -163,7 +177,7 @@ tests/integration/       Tests that need a real database
 | [MVP scope and planning](docs/mvp-scope.md) | What is in, what is out, why — with every brief deliverable traced to where it lives |
 | [Design system](docs/design-system.md) | The design layer (rebuildable in Figma) and the framework layer (how it exists in code) |
 | [Design and architecture](docs/design-and-architecture.md) | The data model, module boundaries, key decisions and the reasoning behind them |
-| [Architecture decisions](docs/adr/README.md) | Eight ADRs — why each choice was made, what was rejected, and what it cost |
+| [Architecture decisions](docs/adr/README.md) | Nine ADRs — why each choice was made, what was rejected, and what it cost |
 | [BRM taxonomy](docs/brm-taxonomy.md) | Every relationship type and status defined, and how the model differs from a CRM |
 | [User guide](docs/user-guide.md) | How to use the delivered application |
 | [Test plan and results](docs/test-plan.md) | What is tested, how, what the last run reported, and what is still to run |

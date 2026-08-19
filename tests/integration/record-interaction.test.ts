@@ -7,43 +7,67 @@
  * arithmetic reads is actually kept true, against a real database, through
  * every route that writes to the log.
  *
- * Each test file gets its own temporary SQLite file, built by running the
- * project's real migrations, so the tests exercise the same schema the
- * application does.
+ * Each run gets its own throwaway Postgres database, built by executing the
+ * project's real migrations — so the tests exercise the same schema the
+ * application does, and a schema change that breaks the invariant fails here
+ * rather than in production.
+ *
+ * Needs a Postgres. `npm run db:up` provides one locally; CI supplies its own.
  */
 
 import { randomUUID } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
+import { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-const dbFile = path.join(tmpdir(), `viemo-test-${randomUUID()}.db`);
+const BASE_URL =
+  process.env.DATABASE_URL ??
+  "postgres://postgres:postgres@localhost:51214/viemo?sslmode=disable";
 
-// lib/db reads DATABASE_URL when the module first loads, so it has to be set
-// before anything imports it — hence the dynamic imports below.
-process.env.DATABASE_URL = `file:${dbFile}`;
+/**
+ * Isolation is per-schema, not per-database.
+ *
+ * A database per run was the first attempt and does not work against the local
+ * development Postgres: `CREATE DATABASE` reports success and the name appears
+ * in `pg_database`, but connecting to it lands back in `template1` — the name
+ * is ignored. A dedicated schema behaves correctly on both that server and a
+ * real Postgres, so it is what the tests use.
+ */
+const TEST_SCHEMA = `test_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
 
 type Loaded = {
-  prisma: typeof import("@/lib/db")["prisma"];
-  recordInteraction: typeof import("@/lib/brm/record-interaction")["recordInteraction"];
-  updateInteraction: typeof import("@/lib/brm/record-interaction")["updateInteraction"];
-  deleteInteraction: typeof import("@/lib/brm/record-interaction")["deleteInteraction"];
+  prisma: (typeof import("@/lib/db"))["prisma"];
+  recordInteraction: (typeof import("@/lib/brm/record-interaction"))["recordInteraction"];
+  updateInteraction: (typeof import("@/lib/brm/record-interaction"))["updateInteraction"];
+  deleteInteraction: (typeof import("@/lib/brm/record-interaction"))["deleteInteraction"];
 };
 
 let mod: Loaded;
 let ownerId: string;
 let relationshipId: string;
 
-function applyMigrations() {
+async function createTestSchema() {
+  const client = new Client({ connectionString: BASE_URL });
+  await client.connect();
+  await client.query(`CREATE SCHEMA "${TEST_SCHEMA}"`);
+  await client.query(`SET search_path TO "${TEST_SCHEMA}"`);
+
+  // Apply the project's own migrations rather than pushing the schema, so the
+  // migration files themselves are covered by the test.
   const migrationsDir = path.join(process.cwd(), "prisma", "migrations");
-  const db = new Database(dbFile);
   for (const entry of readdirSync(migrationsDir).sort()) {
     const sqlFile = path.join(migrationsDir, entry, "migration.sql");
-    if (existsSync(sqlFile)) db.exec(readFileSync(sqlFile, "utf8"));
+    if (existsSync(sqlFile)) await client.query(readFileSync(sqlFile, "utf8"));
   }
-  db.close();
+  await client.end();
+}
+
+async function dropTestSchema() {
+  const client = new Client({ connectionString: BASE_URL });
+  await client.connect();
+  await client.query(`DROP SCHEMA IF EXISTS "${TEST_SCHEMA}" CASCADE`);
+  await client.end();
 }
 
 const CREATED_AT = new Date("2026-01-01T00:00:00.000Z");
@@ -55,7 +79,14 @@ function daysAfterCreation(days: number): Date {
 }
 
 beforeAll(async () => {
-  applyMigrations();
+  await createTestSchema();
+
+  // lib/db reads both of these when the module first loads, so they have to be
+  // set before anything imports it — hence the dynamic imports below. The pg
+  // adapter takes the schema as an option rather than a connection-string
+  // parameter, which is why a `?schema=` in the URL would be ignored.
+  process.env.DATABASE_URL = BASE_URL;
+  process.env.DATABASE_SCHEMA = TEST_SCHEMA;
 
   const [{ prisma }, recordModule] = await Promise.all([
     import("@/lib/db"),
@@ -68,12 +99,13 @@ beforeAll(async () => {
     updateInteraction: recordModule.updateInteraction,
     deleteInteraction: recordModule.deleteInteraction,
   };
-});
+}, 60_000);
 
 afterAll(async () => {
   await mod?.prisma.$disconnect();
-  rmSync(dbFile, { force: true });
-});
+  await dropTestSchema();
+  delete process.env.DATABASE_SCHEMA;
+}, 60_000);
 
 beforeEach(async () => {
   const { prisma } = mod;

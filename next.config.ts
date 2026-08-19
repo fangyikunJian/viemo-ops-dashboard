@@ -31,6 +31,22 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  /**
+   * Note on deployment: `output: "standalone"` was tried and reverted.
+   *
+   * The demonstration host has 1.6 GB of memory, and `next build` there
+   * thrashes swap hard enough to starve sshd — the machine stops answering its
+   * own SSH banner while the build grinds. So the build happens on a
+   * developer's machine and only the output ships.
+   *
+   * Standalone looked like the right way to do that until the bundle was
+   * inspected: it traces and copies the *host's* native modules, so a Windows
+   * build ships `better_sqlite3.node` and `sharp-win32-x64` — neither of which
+   * a Linux server can load. Shipping the plain `.next` output instead lets
+   * the server resolve those from its own `node_modules`, which are correct
+   * for its platform. Fewer moving parts, and no binary that only fails at
+   * runtime.
+   */
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

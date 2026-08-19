@@ -21,7 +21,7 @@ Three layers:
 | Layer | What it covers | How |
 |---|---|---|
 | **Unit** | Domain logic: cadence, project health, permissions, password hashing, the integration port | Vitest, no database, no Next.js runtime |
-| **Integration** | The one denormalised field in the schema and the invariant that keeps it true | Vitest against a temporary SQLite database built from the project's real migrations |
+| **Integration** | The one denormalised field in the schema and the invariant that keeps it true | Vitest against a throwaway Postgres schema built from the project's real migrations |
 | **Manual** | Screens, forms, navigation, and role-based access as a user experiences it | Scripted walkthrough, §5 |
 
 Automated tests are not aimed at server actions and Prisma query modules. Those
@@ -276,8 +276,9 @@ find perhaps a third of real barriers.
 
 Stated plainly rather than left to be discovered:
 
-- **Concurrency.** Two people editing the same record at once. SQLite is
-  single-writer and the demonstration is single-user.
+- **Concurrency.** Two people editing the same record at once. Postgres handles
+  the writes; what is untested is whether the interface does anything sensible
+  when one person's change lands on top of another's.
 - **Volume.** The lists load everything; behaviour past a few hundred
   relationships is unmeasured.
 - **Browsers other than Chromium.** No cross-browser matrix was run.

@@ -1,6 +1,6 @@
 # ADR-0005 — Next.js, Prisma and SQLite in a single repository
 
-**Status:** Accepted · 17 August 2026
+**Status:** Accepted · 17 August 2026 — **database superseded by [ADR-0009](0009-postgres-not-sqlite.md)**
 
 ## Context
 

@@ -19,8 +19,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    # A real Postgres, because the integration tests run against one and the
+    # migrations are Postgres migrations. Health-checked so the first step does
+    # not race the container's startup.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: viemo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
-      DATABASE_URL: file:./dev.db
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/viemo
 
     steps:
       - name: Check out the repository

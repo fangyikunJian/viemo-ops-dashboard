@@ -33,3 +33,4 @@ old one **Superseded by ADR-NNNN**, so the reasoning trail survives.
 | [0006](0006-authorise-inside-server-actions.md) | Authorisation is enforced inside server actions | Accepted |
 | [0007](0007-integration-port-not-live-connection.md) | Integration is a port with adapters, not a live connection | Accepted |
 | [0008](0008-step-palette-colours-for-contrast.md) | Step the reference palette's colours for text contrast | Accepted |
+| [0009](0009-postgres-not-sqlite.md) | Postgres, not SQLite — matching the client's Supabase stack | Accepted |

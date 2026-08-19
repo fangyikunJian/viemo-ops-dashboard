@@ -113,7 +113,7 @@ Every deliverable named in the brief, and where it is.
 | Source in version control, README, setup instructions | [README](../README.md) |
 | Design and architecture document | [design-and-architecture.md](design-and-architecture.md) + [8 ADRs](adr/README.md) |
 | BRM relationship taxonomy, and how it differs from a CRM | [brm-taxonomy.md](brm-taxonomy.md) |
-| Key design decisions and technology stack | [ADR-0005](adr/0005-nextjs-prisma-sqlite.md), README §Technology |
+| Key design decisions and technology stack | [ADR-0005](adr/0005-nextjs-prisma-sqlite.md) and [ADR-0009](adr/0009-postgres-not-sqlite.md), README §Technology |
 | Brief user guide | [user-guide.md](user-guide.md) |
 | Testing evidence — plan and results | [test-plan.md](test-plan.md) |
 | Final presentation and demonstration | [demonstration-guide.md](demonstration-guide.md) |

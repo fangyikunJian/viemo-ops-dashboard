@@ -85,7 +85,7 @@ export const SECTIONS = [
   {
     label: "Decisions",
     pages: [
-      { slug: "adr", source: "docs/adr/README.md", title: "Decision records", blurb: "Index of eight ADRs" },
+      { slug: "adr", source: "docs/adr/README.md", title: "Decision records", blurb: "Index of nine ADRs" },
       { slug: "adr-0001", source: "docs/adr/0001-relationship-as-first-class-entity.md", title: "ADR-0001 · Relationship first" },
       { slug: "adr-0002", source: "docs/adr/0002-derive-values-rather-than-store-them.md", title: "ADR-0002 · Derive, don't store" },
       { slug: "adr-0003", source: "docs/adr/0003-modules-never-import-each-other.md", title: "ADR-0003 · Module boundary" },
@@ -94,6 +94,7 @@ export const SECTIONS = [
       { slug: "adr-0006", source: "docs/adr/0006-authorise-inside-server-actions.md", title: "ADR-0006 · Authorisation" },
       { slug: "adr-0007", source: "docs/adr/0007-integration-port-not-live-connection.md", title: "ADR-0007 · Integration port" },
       { slug: "adr-0008", source: "docs/adr/0008-step-palette-colours-for-contrast.md", title: "ADR-0008 · Contrast" },
+      { slug: "adr-0009", source: "docs/adr/0009-postgres-not-sqlite.md", title: "ADR-0009 · Postgres" },
     ],
   },
   {

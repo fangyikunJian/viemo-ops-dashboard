@@ -150,7 +150,7 @@ Tag ──────────── Relationship, Project   (shared vocabul
 
 ### 4.1 Enumerations are strings
 
-SQLite has no enum type, so `type`, `status`, `channel` and `priority` are
+`type`, `status`, `channel` and `priority` are
 `String` columns. The permitted values live once in `lib/domain/enums.ts` as
 `const` arrays, with a Zod schema and a TypeScript union derived from each.
 Every write validates against them; every screen reads its labels from them.
@@ -366,16 +366,15 @@ at all — including the cases that are awkward to reach through the interface,
 such as a cadence of zero or a relationship never contacted.
 
 The one place a real database is required is the `lastContactAt` invariant, and
-that gets an integration suite of its own running against a temporary SQLite
-file built from the project's real migrations.
+that gets an integration suite of its own, running against a throwaway Postgres
+schema built from the project's real migrations.
 
 ---
 
 ## 11. Known limitations
 
-- **SQLite is single-writer.** Correct for a self-contained demonstration;
-  moving to Postgres would be a change of provider and connection string, and
-  the driver-adapter arrangement already anticipates it.
+- **No connection pooling of our own.** Fine against a managed Postgres, which
+  pools for us; a self-hosted deployment would want PgBouncer in front.
 - **No pagination.** The relationship and project lists load everything. At the
   scale a venture studio operates — tens to low hundreds of relationships — this
   is the right trade. It would not survive thousands.

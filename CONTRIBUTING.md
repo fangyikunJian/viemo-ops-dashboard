@@ -10,7 +10,7 @@ commit; the rest is reference.
 ## 1. Get it running
 
 You need **Node 20.19 or newer** (`.nvmrc` pins 24.13.0) and npm. Nothing else
-— no database server to install, because the database is a file.
+— no Docker, and no database server to install: Prisma ships one.
 
 ```bash
 git clone https://github.com/fangyikunJian/viemo-ops-dashboard.git
@@ -25,6 +25,14 @@ cp .env.example .env
 ```
 
 ```bash
+npm run db:up
+```
+
+Starts a local Postgres. **Leave it running** — if you forget it, everything
+fails with `ECONNREFUSED 127.0.0.1:51214`, which is the single most common
+"why is nothing working" on this project.
+
+```bash
 npm run setup
 ```
 
@@ -35,9 +43,9 @@ npm run dev
 Open <http://localhost:3000>. Sign-in details are printed by the seed and shown
 on the sign-in screen.
 
-**If something is wrong**, the fastest reset is `npm run db:reset && npm run db:seed`.
-It drops the database and rebuilds it. You will lose local data; the data is
-synthetic, so that is fine.
+**If something is wrong**, in order: check the database is up (`npm run db:up`),
+then `npm run db:reset && npm run db:seed` to drop and rebuild it. You will lose
+local data; the data is synthetic, so that is fine.
 
 ---
 
