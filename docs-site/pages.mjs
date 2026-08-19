@@ -119,6 +119,12 @@ export const SECTIONS = [
         blurb: "WCAG 2.2 AA, Privacy Act, Essential Eight — including what is not met",
       },
       {
+        slug: "deployment",
+        source: "docs/deployment.md",
+        title: "Deployment",
+        blurb: "Vercel, Supabase and Pages — and what not to deploy where",
+      },
+      {
         slug: "demonstration",
         source: "docs/demonstration-guide.md",
         title: "Demonstration guide",
