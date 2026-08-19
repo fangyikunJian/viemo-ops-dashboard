@@ -16,6 +16,7 @@ import { addDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "./password";
 import { checkRateLimit, clearRateLimit, recordFailure } from "./rate-limit";
+import { recordAudit } from "@/lib/audit/record";
 import {
   can,
   type PermissionAction,
@@ -97,10 +98,21 @@ export async function signIn(
 
   if (!user || !user.isActive) {
     recordFailure(address);
+    // Recorded without naming whether the account exists — the audit trail
+    // should not become the account-enumeration oracle the sign-in screen
+    // deliberately is not.
+    await recordAudit({
+      actor: null, action: "SIGN_IN_FAILED", resource: "session",
+      summary: `Failed sign-in for ${address}`,
+    });
     return generalFailure;
   }
   if (!(await verifyPassword(password, user.passwordHash))) {
     recordFailure(address);
+    await recordAudit({
+      actor: null, action: "SIGN_IN_FAILED", resource: "session",
+      summary: `Failed sign-in for ${address}`,
+    });
     return generalFailure;
   }
 
@@ -121,17 +133,22 @@ export async function signIn(
     path: "/",
   });
 
-  return {
-    ok: true,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role as UserRole,
-      teamMemberId: user.teamMemberId,
-      teamMemberName: user.teamMember?.name ?? null,
-    },
+  const signedIn = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role as UserRole,
+    teamMemberId: user.teamMemberId,
+    teamMemberName: user.teamMember?.name ?? null,
   };
+
+  await recordAudit({
+    actor: signedIn, action: "SIGN_IN", resource: "session",
+    resourceId: sessionId,
+    summary: `${user.name} signed in`,
+  });
+
+  return { ok: true, user: signedIn };
 }
 
 /** End the current session and clear its cookie. */
@@ -140,7 +157,14 @@ export async function signOut(): Promise<void> {
   const id = jar.get(SESSION_COOKIE)?.value;
 
   if (id) {
+    const actor = await getSessionUser();
     await prisma.session.deleteMany({ where: { id } });
+    if (actor) {
+      await recordAudit({
+        actor, action: "SIGN_OUT", resource: "session",
+        resourceId: id, summary: `${actor.name} signed out`,
+      });
+    }
   }
 
   jar.delete(SESSION_COOKIE);

@@ -46,7 +46,7 @@ npm run test:coverage
 
 ## 3. Results
 
-**94 tests across 7 files. All passing.**
+**136 tests across 10 files. All passing.**
 
 | File | Tests | Covers |
 |---|---|---|
@@ -56,6 +56,8 @@ npm run test:coverage
 | `lib/auth/password.test.ts` | 9 | Hashing, verification, malformed input |
 | `lib/auth/rate-limit.test.ts` | 8 | Sign-in throttling, window behaviour, per-address isolation |
 | `lib/integration/adapters.test.ts` | 6 | The extension port and both adapters |
+| `lib/integration/agent-port.test.ts` | 22 | The agent contract, budgets, the rules adapter and the Claude stub |
+| `lib/audit/vocabulary.test.ts` | 12 | Field diffing, phrasing, and the action vocabulary |
 | `tests/integration/record-interaction.test.ts` | 13 | The `lastContactAt` invariant, against a real database |
 
 Continuous integration runs typecheck, lint, tests, build and the seed on every

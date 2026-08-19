@@ -4,6 +4,7 @@ import { ArrowLeft, CircleSlash, Download, Plug } from "lucide-react";
 
 import { requirePermission } from "@/lib/auth/session";
 import { ADAPTERS } from "@/lib/integration/adapters";
+import { AGENT_ADAPTERS, DEFAULT_BUDGET, PROPOSAL_KIND_LABELS } from "@/lib/integration/agent-port";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/empty-state";
@@ -63,6 +64,8 @@ export default async function IntegrationsPage() {
         </CardBody>
       </Card>
 
+      <p className="eyebrow">Outbound adapters</p>
+
       <div className="space-y-4">
         {ADAPTERS.map((adapter) => (
           <Card key={adapter.id}>
@@ -121,6 +124,70 @@ export default async function IntegrationsPage() {
           </Card>
         ))}
       </div>
+
+      <Card>
+        <CardHeader
+          title="The agent seam"
+          description="Where an AI workflow agent plugs in — and the rules it has to obey."
+        />
+        <CardBody className="space-y-3 text-sm text-ink-secondary">
+          <p>
+            An agent gets a read-only snapshot and returns{" "}
+            <strong className="text-ink">proposals</strong>. There is no path
+            from the interface to a database write: a proposal becomes a change
+            only when a person approves it, through the same permission checks
+            as anything else. An agent can never do what the person driving it
+            could not do themselves.
+          </p>
+          <p>
+            Every run reports what it cost, and every run is capped before it
+            starts — currently{" "}
+            <strong className="text-ink">{DEFAULT_BUDGET.maxCents}c</strong> and{" "}
+            <strong className="text-ink">{DEFAULT_BUDGET.maxProposals} proposals</strong>{" "}
+            per run. An adapter that hits a ceiling has to say so rather than
+            quietly returning less.
+          </p>
+        </CardBody>
+      </Card>
+
+      {AGENT_ADAPTERS.map((adapter) => (
+        <Card key={adapter.id}>
+          <CardHeader
+            title={
+              <span className="flex items-center gap-2">
+                {adapter.implemented ? (
+                  <Plug className="size-4 text-good" aria-hidden="true" />
+                ) : (
+                  <CircleSlash className="size-4 text-ink-muted" aria-hidden="true" />
+                )}
+                {adapter.label}
+                <Badge tone={adapter.implemented ? "emerald" : "slate"}>
+                  {adapter.implemented ? "Available" : "Stub"}
+                </Badge>
+              </span>
+            }
+            description={adapter.description}
+          />
+          <CardBody>
+            <p className="text-xs font-medium text-ink-muted">Can propose</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {adapter.kinds.map((kind) => (
+                <Badge key={kind} tone="blue">
+                  {PROPOSAL_KIND_LABELS[kind]}
+                </Badge>
+              ))}
+            </div>
+            {!adapter.implemented ? (
+              <p className="mt-3 text-xs text-ink-secondary">
+                Three things need settling before this can be built: where the
+                API key lives, what a run actually costs, and who approves a
+                proposal and how quickly. The last is a workflow decision for
+                the client, not a technical one.
+              </p>
+            ) : null}
+          </CardBody>
+        </Card>
+      ))}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Check, Plug, ShieldCheck, X } from "lucide-react";
+import { Check, Plug, ScrollText, ShieldCheck, X } from "lucide-react";
 
 import { requirePermission } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
@@ -42,10 +42,16 @@ export default async function AdminPage() {
         title="Administration"
         description="Accounts and what each role may do. Every rule shown here is enforced on the server, inside the action that performs the change — hiding a control is only a courtesy."
         action={
-          <ButtonLink href="/admin/integrations" size="sm">
-            <Plug className="size-3.5" aria-hidden="true" />
-            Integrations
-          </ButtonLink>
+          <div className="flex items-center gap-2">
+            <ButtonLink href="/admin/audit" size="sm">
+              <ScrollText className="size-3.5" aria-hidden="true" />
+              Audit trail
+            </ButtonLink>
+            <ButtonLink href="/admin/integrations" size="sm">
+              <Plug className="size-3.5" aria-hidden="true" />
+              Integrations
+            </ButtonLink>
+          </div>
         }
       />
 

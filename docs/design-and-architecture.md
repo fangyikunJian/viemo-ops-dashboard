@@ -380,8 +380,11 @@ schema built from the project's real migrations.
   is the right trade. It would not survive thousands.
 - **Cadence filtering happens in application code**, because cadence is derived
   and cannot be expressed in SQL against the current schema.
-- **No audit trail.** Who changed what, and when, is not recorded beyond
-  `updatedAt`.
+- **The audit trail is not fully transactional.** Where an action already runs
+  in a transaction the entry commits with it; where the action is a single
+  Prisma call the entry is written immediately after, leaving a one-statement
+  window in which a change could exist without its record. Named in
+  `lib/audit/record.ts` rather than hidden.
 - **Search is a substring match on name.** No fuzzy matching, no searching
   interaction text.
 

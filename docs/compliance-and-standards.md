@@ -23,7 +23,7 @@ part of the document.
 | Privacy | Privacy Act 1988, Australian Privacy Principles | **Partially met** — APP 11 largely satisfied; APP 1 and APP 5 not addressed |
 | Security | ACSC Essential Eight; OWASP basics | **Partially met** — application-layer controls in place; several are organisational, not ours |
 | Engineering practice | ADR, CI, testing, documentation | **Met**, with named gaps |
-| Records | Audit trail, data retention | **Not met** |
+| Records | Audit trail, data retention | **Partially met** — an append-only audit trail exists; no retention policy |
 
 ---
 
@@ -135,7 +135,7 @@ automated decision-making transparency requirements commencing **10 December
 | **APP 6** — Use and disclosure | Use only for the purpose collected | **Met by design.** No third-party analytics, no external calls, no telemetry. The JSON export is administrator-only and deliberate. |
 | **APP 8** — Cross-border disclosure | Restrictions on sending offshore | **Met today.** Runs locally with no external egress. Would engage on deployment to an offshore host — a hosting decision to make consciously. |
 | **APP 10** — Quality | Accurate, up to date, complete | **Partially met.** Validation on every write; `updatedAt` on every record. No review or correction workflow. |
-| **APP 11** — Security | Reasonable steps to protect information | **Largely met.** See §4. Absence of an audit trail is the main shortfall. |
+| **APP 11** — Security | Reasonable steps to protect information | **Largely met.** See §4. An audit trail now records who changed what and when. |
 | **APP 12** — Access | Give a person access to their information on request | **Not met.** No mechanism to export what is held about one individual. |
 | **APP 13** — Correction | Correct information on request | **Partially met.** Records are editable by a member, but there is no request-and-response process. |
 
@@ -200,8 +200,6 @@ controls. Assessed for what an application can contribute:
   than faked.
 - **Rate limiting is per-process and in memory.** Correct for one instance;
   needs a shared store behind more than one.
-- **No audit trail.** Who changed what, when. Required for any real
-  accountability and the first thing to build.
 - **No dependency vulnerability scanning** in CI. `npm audit` reported zero at
   install time, but nothing watches it.
 - **No penetration testing.**
@@ -258,8 +256,6 @@ In the order they would pay off, with the reasoning:
 1. **Screen-reader pass and target-size fixes.** Accessibility is the obligation
    with real legal exposure in Australia, and it is the one where automated
    checking is least sufficient.
-2. **Audit trail.** Unblocks APP 11 accountability and is needed before more
-   than a handful of people share the system.
 3. **Privacy notice and an APP 5 position.** A client decision. Raise it at the
    requirements meeting.
 4. **Multi-factor authentication.** The clearest Essential Eight gap.

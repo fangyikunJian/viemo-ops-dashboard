@@ -2,6 +2,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { buildSnapshot } from "@/lib/integration/snapshot";
 import { jsonExportAdapter } from "@/lib/integration/adapters";
+import { recordAudit } from "@/lib/audit/record";
 
 /**
  * The JSON export, driven through the integration port rather than around it.
@@ -29,6 +30,15 @@ export async function GET(): Promise<Response> {
   if (!result.ok) {
     return Response.json({ error: result.error }, { status: 500 });
   }
+
+  await recordAudit({
+    actor: user, action: "EXPORT", resource: "snapshot",
+    summary: `Exported ${snapshot.projects.length} projects and ${snapshot.relationships.length} relationships`,
+    metadata: {
+      projects: snapshot.projects.length,
+      relationships: snapshot.relationships.length,
+    },
+  });
 
   const filename = `viemo-snapshot-${snapshot.takenAt.slice(0, 10)}.json`;
 

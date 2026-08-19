@@ -26,6 +26,7 @@ import {
   recordInteraction,
   updateInteraction,
 } from "./record-interaction";
+import { recordAudit, diffFields, listFields } from "@/lib/audit/record";
 
 // ═══════════════════════════════════════════════════════════════════
 //  Schemas
@@ -118,9 +119,41 @@ export async function saveRelationshipAction(
 
   const data = { ...parsed.data, tags: { set: [], connect: tagConnections } };
 
-  const saved = id
-    ? await prisma.relationship.update({ where: { id }, data })
-    : await prisma.relationship.create({ data });
+  const AUDITED_FIELDS = [
+    "name", "type", "status", "cadenceDays", "ownerId",
+    "organisationId", "valueToUs", "valueToThem", "notes",
+  ] as const;
+
+  let saved;
+  if (id) {
+    const before = await prisma.relationship.findUnique({ where: { id } });
+    saved = await prisma.relationship.update({ where: { id }, data });
+
+    if (before) {
+      const { changed, metadata } = diffFields(before, saved, AUDITED_FIELDS);
+      if (changed.length > 0) {
+        await recordAudit({
+          actor: user,
+          action: "UPDATE",
+          resource: "relationship",
+          resourceId: saved.id,
+          resourceLabel: saved.name,
+          summary: `Changed ${listFields(changed)} on ${saved.name}`,
+          metadata,
+        });
+      }
+    }
+  } else {
+    saved = await prisma.relationship.create({ data });
+    await recordAudit({
+      actor: user,
+      action: "CREATE",
+      resource: "relationship",
+      resourceId: saved.id,
+      resourceLabel: saved.name,
+      summary: `Added ${saved.name} as a ${saved.type.toLowerCase().replace(/_/g, " ")}`,
+    });
+  }
 
   revalidatePath("/relationships");
   revalidatePath("/dashboard");
@@ -135,7 +168,19 @@ export async function archiveRelationshipAction(formData: FormData): Promise<voi
   const id = text(formData.get("id"));
   const status = text(formData.get("status")) === "ARCHIVED" ? "DORMANT" : "ARCHIVED";
 
-  await prisma.relationship.update({ where: { id }, data: { status } });
+  const updated = await prisma.relationship.update({ where: { id }, data: { status } });
+
+  await recordAudit({
+    actor: user,
+    action: status === "ARCHIVED" ? "ARCHIVE" : "RESTORE",
+    resource: "relationship",
+    resourceId: id,
+    resourceLabel: updated.name,
+    summary:
+      status === "ARCHIVED"
+        ? `Archived ${updated.name}`
+        : `Restored ${updated.name} to dormant`,
+  });
 
   revalidatePath("/relationships");
   revalidatePath(`/relationships/${id}`);
@@ -154,7 +199,24 @@ export async function deleteRelationshipAction(formData: FormData): Promise<void
   if (!can(user.role, "delete", "relationship")) return;
 
   const id = text(formData.get("id"));
-  await prisma.relationship.delete({ where: { id } });
+  const deleted = await prisma.relationship.delete({
+    where: { id },
+    include: { _count: { select: { interactions: true, contacts: true } } },
+  });
+
+  await recordAudit({
+    actor: user,
+    action: "DELETE",
+    resource: "relationship",
+    resourceId: id,
+    resourceLabel: deleted.name,
+    summary: `Permanently deleted ${deleted.name}, with ${deleted._count.interactions} interactions and ${deleted._count.contacts} contacts`,
+    metadata: {
+      type: deleted.type,
+      status: deleted.status,
+      interactions: deleted._count.interactions,
+    },
+  });
 
   revalidatePath("/relationships");
   revalidatePath("/dashboard");

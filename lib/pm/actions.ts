@@ -13,6 +13,7 @@ import {
   taskStatusSchema,
 } from "@/lib/domain/enums";
 import { fromDateInputValue } from "@/lib/format";
+import { recordAudit, diffFields, listFields } from "@/lib/audit/record";
 import {
   fieldErrorsFrom,
   optionalText,
@@ -92,9 +93,31 @@ export async function saveProjectAction(
   const tagConnections = await connectTags(tagLabels(formData.get("tags")));
   const data = { ...parsed.data, tags: { set: [], connect: tagConnections } };
 
-  const saved = id
-    ? await prisma.project.update({ where: { id }, data })
-    : await prisma.project.create({ data });
+  const AUDITED = ["name", "description", "status", "startDate", "dueDate", "leadId", "relationshipId"] as const;
+
+  let saved;
+  if (id) {
+    const before = await prisma.project.findUnique({ where: { id } });
+    saved = await prisma.project.update({ where: { id }, data });
+    if (before) {
+      const { changed, metadata } = diffFields(before, saved, AUDITED);
+      if (changed.length > 0) {
+        await recordAudit({
+          actor: user, action: "UPDATE", resource: "project",
+          resourceId: saved.id, resourceLabel: saved.name,
+          summary: `Changed ${listFields(changed)} on ${saved.name}`,
+          metadata,
+        });
+      }
+    }
+  } else {
+    saved = await prisma.project.create({ data });
+    await recordAudit({
+      actor: user, action: "CREATE", resource: "project",
+      resourceId: saved.id, resourceLabel: saved.name,
+      summary: `Started project ${saved.name}`,
+    });
+  }
 
   revalidatePath("/projects");
   revalidatePath("/dashboard");
@@ -105,7 +128,18 @@ export async function deleteProjectAction(formData: FormData): Promise<void> {
   const user = await requireUser();
   if (!can(user.role, "delete", "project")) return;
 
-  await prisma.project.delete({ where: { id: text(formData.get("id")) } });
+  const id = text(formData.get("id"));
+  const deleted = await prisma.project.delete({
+    where: { id },
+    include: { _count: { select: { tasks: true } } },
+  });
+
+  await recordAudit({
+    actor: user, action: "DELETE", resource: "project",
+    resourceId: id, resourceLabel: deleted.name,
+    summary: `Permanently deleted project ${deleted.name}, with ${deleted._count.tasks} tasks`,
+    metadata: { status: deleted.status, tasks: deleted._count.tasks },
+  });
 
   revalidatePath("/projects");
   revalidatePath("/dashboard");

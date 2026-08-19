@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { hashPassword, validatePassword } from "@/lib/auth/password";
 import { userRoleSchema } from "@/lib/domain/enums";
+import { recordAudit } from "@/lib/audit/record";
 import {
   fieldErrorsFrom,
   optionalText,
@@ -81,8 +82,15 @@ export async function createUserAction(
     }
   }
 
-  await prisma.user.create({
+  const created = await prisma.user.create({
     data: { ...parsed.data, passwordHash: await hashPassword(password) },
+  });
+
+  await recordAudit({
+    actor: user, action: "CREATE", resource: "user",
+    resourceId: created.id, resourceLabel: created.email,
+    summary: `Created a ${created.role.toLowerCase()} account for ${created.name}`,
+    metadata: { role: created.role, linkedToTeamMember: Boolean(created.teamMemberId) },
   });
 
   revalidatePath("/admin");
@@ -107,7 +115,18 @@ export async function setUserRoleAction(formData: FormData): Promise<void> {
     if (otherAdmins === 0) return;
   }
 
-  await prisma.user.update({ where: { id }, data: { role: role.data } });
+  const before = await prisma.user.findUnique({ where: { id }, select: { role: true, name: true, email: true } });
+  const updated = await prisma.user.update({ where: { id }, data: { role: role.data } });
+
+  if (before && before.role !== role.data) {
+    await recordAudit({
+      actor, action: "ROLE_CHANGE", resource: "user",
+      resourceId: id, resourceLabel: updated.email,
+      summary: `Changed ${updated.name} from ${before.role.toLowerCase()} to ${role.data.toLowerCase()}`,
+      metadata: { from: before.role, to: role.data },
+    });
+  }
+
   revalidatePath("/admin");
 }
 
@@ -131,9 +150,17 @@ export async function toggleUserActiveAction(formData: FormData): Promise<void> 
     if (otherAdmins === 0) return;
   }
 
-  await prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id },
     data: { isActive: !target.isActive },
+  });
+
+  await recordAudit({
+    actor, action: target.isActive ? "DEACTIVATE" : "REACTIVATE",
+    resource: "user", resourceId: id, resourceLabel: updated.email,
+    summary: target.isActive
+      ? `Deactivated ${updated.name} and ended their sessions`
+      : `Reactivated ${updated.name}`,
   });
 
   // Deactivating an account must end its live sessions, or it stays signed in

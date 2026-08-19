@@ -43,6 +43,7 @@ model User {
   teamMemberId String?     @unique
   teamMember   TeamMember? @relation(fields: [teamMemberId], references: [id], onDelete: SetNull)
   sessions     Session[]
+  auditEvents  AuditEvent[]
 
   @@index([role])
 }
@@ -253,4 +254,51 @@ model Task {
   @@index([projectId, status])
   @@index([assigneeId])
   @@index([dueDate])
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Audit
+// ═══════════════════════════════════════════════════════════════════
+
+/// An immutable record of something a person did.
+///
+/// Append-only by convention: nothing in the application updates or deletes a
+/// row here, because a trail that can be rewritten answers no question worth
+/// asking.
+///
+/// The actor's name and the record's label are copied in rather than joined.
+/// That is deliberate duplication: an audit trail whose entries go blank when
+/// the account or the record is deleted is useless at exactly the moment
+/// someone needs it. The foreign key is kept alongside for the cases where the
+/// target still exists.
+model AuditEvent {
+  id         String   @id @default(cuid())
+  occurredAt DateTime @default(now())
+
+  /// Who did it. Null for anything the system did on its own.
+  actorUserId String?
+  actorUser   User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  /// Their name and role as at the time, so the entry survives the account.
+  actorName   String
+  actorRole   String
+
+  /// CREATE | UPDATE | ARCHIVE | RESTORE | DELETE | SIGN_IN | SIGN_IN_FAILED |
+  /// SIGN_OUT | ROLE_CHANGE | DEACTIVATE | REACTIVATE | EXPORT
+  action String
+  /// The kind of thing acted on — relationship, project, task, user, session…
+  resource String
+  /// Null for actions with no single target, such as an export.
+  resourceId String?
+  /// The record's name as at the time, so the entry survives its deletion.
+  resourceLabel String?
+
+  /// One line a person can read without decoding anything.
+  summary String
+  /// Optional structured detail — which fields changed, from what, to what.
+  metadata Json?
+
+  @@index([occurredAt])
+  @@index([resource, resourceId])
+  @@index([actorUserId])
+  @@index([action])
 }
