@@ -175,6 +175,7 @@ tests/integration/       Tests that need a real database
 |---|---|
 | [Team handbook](CONTRIBUTING.md) | **Start here if you are working on this.** Setup, the three architectural rules, where things go, definition of done |
 | [Client alignment](docs/client-alignment.md) | **Read before the next client meeting.** Where the brief and the client's vision diverge, and the five questions that need answering |
+| [Product specification](docs/product-specification.md) | **For the client.** Every feature and every rule, with the guesses marked as guesses |
 | [MVP scope and planning](docs/mvp-scope.md) | What is in, what is out, why — with every brief deliverable traced to where it lives |
 | [Design system](docs/design-system.md) | The design layer (rebuildable in Figma) and the framework layer (how it exists in code) |
 | [Design and architecture](docs/design-and-architecture.md) | The data model, module boundaries, key decisions and the reasoning behind them |

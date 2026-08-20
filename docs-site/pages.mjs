@@ -40,6 +40,12 @@ export const SECTIONS = [
         blurb: "What is in, what is out, and why",
       },
       {
+        slug: "product-specification",
+        source: "docs/product-specification.md",
+        title: "Product specification",
+        blurb: "What it does and by what rules — written to be argued with",
+      },
+      {
         slug: "brm-taxonomy",
         source: "docs/brm-taxonomy.md",
         title: "BRM taxonomy",

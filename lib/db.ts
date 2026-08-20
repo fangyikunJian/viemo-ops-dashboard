@@ -33,11 +33,34 @@ if (!DATABASE_URL) {
  */
 const DATABASE_SCHEMA = process.env.DATABASE_SCHEMA;
 
+// Supabase sits behind PgBouncer, which hangs up on idle connections. A pool
+// that holds one longer than the server does hands out a dead connection, and
+// the symptom is P1017 ConnectionClosed on a page that worked a minute ago —
+// with the database itself perfectly healthy. So idleTimeoutMillis has to stay
+// under the server's own cutoff. `max` is small because each serverless
+// instance gets its own pool.
+const POOL = {
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 10_000,
+  max: 5,
+};
+
 function createPrismaClient() {
   const adapter = new PrismaPg(
-    { connectionString: DATABASE_URL },
-    DATABASE_SCHEMA ? { schema: DATABASE_SCHEMA } : undefined,
+    { connectionString: DATABASE_URL, ...POOL },
+    {
+      ...(DATABASE_SCHEMA ? { schema: DATABASE_SCHEMA } : {}),
+      // An idle client erroring emits on the pool; unhandled, pg escalates it
+      // to an uncaught exception and takes the process down.
+      onPoolError: (error) => {
+        console.error("Postgres pool error (connection discarded):", error.message);
+      },
+      onConnectionError: (error) => {
+        console.error("Postgres connection error:", error.message);
+      },
+    },
   );
+
   return new PrismaClient({ adapter });
 }
 

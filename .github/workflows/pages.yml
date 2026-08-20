@@ -52,7 +52,7 @@ jobs:
         run: |
           count=$(find docs-site/dist -name '*.html' | wc -l)
           echo "Generated $count pages"
-          test "$count" -ge 25 || { echo "Expected at least 25 pages"; exit 1; }
+          test "$count" -ge 26 || { echo "Expected at least 26 pages"; exit 1; }
           test -f docs-site/dist/index.html
           test -f docs-site/dist/flows.html
           test -f docs-site/dist/styles.css

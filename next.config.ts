@@ -32,6 +32,20 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   /**
+   * Keep the Postgres driver out of the bundler.
+   *
+   * `pg` opens real sockets and keeps a connection pool. Bundling it gives the
+   * dev server more than one copy of the module, so the pool a request reaches
+   * is not the pool that owns its connection, and queries fail with
+   * `P1017 ConnectionClosed` while the database itself is perfectly healthy —
+   * which sends you looking at the database instead of the bundler.
+   *
+   * Next externalises `@prisma/client` on its own; the driver adapter and `pg`
+   * have to be named.
+   */
+  serverExternalPackages: ["pg", "@prisma/adapter-pg"],
+
+  /**
    * Note on deployment: `output: "standalone"` was tried and reverted.
    *
    * The demonstration host has 1.6 GB of memory, and `next build` there

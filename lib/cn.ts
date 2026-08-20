@@ -1,19 +1,10 @@
 import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
-/**
- * tailwind-merge, taught about this project's type scale.
- *
- * Without this, `cn("text-figure", "text-critical")` silently drops the size.
- * tailwind-merge resolves conflicts by class group, and every `text-*` class it
- * does not recognise falls into `text-color` — so a custom font size and a
- * colour look like the same property to it and the last one wins.
- *
- * The failure is quiet: no error, no warning, the element just renders at the
- * inherited size. Registering the custom sizes under `font-size` is what makes
- * the merge treat them as what they are. Add any new `--text-*` token here at
- * the same time you add it to globals.css.
- */
+// Custom font sizes must be registered here as well as in globals.css.
+// tailwind-merge files any `text-*` class it doesn't recognise under
+// `text-color`, so cn("text-figure", "text-critical") silently drops the size —
+// no error, the element just renders at whatever it inherited.
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
@@ -22,7 +13,6 @@ const twMerge = extendTailwindMerge({
   },
 });
 
-/** Join class names, letting later Tailwind utilities win over earlier ones. */
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
